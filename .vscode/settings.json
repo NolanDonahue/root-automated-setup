@@ -28,5 +28,6 @@
     "waystation",
     "Waystations",
     "Woodfolk"
-  ]
+  ],
+  "i18n-ally.localesPaths": ["src/locales", "src/images/languages"]
 }

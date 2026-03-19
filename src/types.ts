@@ -98,6 +98,7 @@ export type LandmarkCode = string
 export interface Landmark extends GameComponent {
   minPlayers: number
   isValidPlacement?: PlacementValidator
+  placementRules?: LandmarkRule[]
 }
 
 export type BotCode = string
@@ -157,6 +158,8 @@ export interface SetupClearing extends Clearing {
 export interface SetupMapState {
   code: MapCode
   clearings: SetupClearing[]
+  paths: FloodablePath[]
+  forests: [number, number][]
   useLandmark?: boolean
   landmark?: {
     clearing: number
@@ -192,6 +195,7 @@ export interface Landmark extends GameComponent {
 export type HirelingRule =
   | 'allClearings' // Forest Patrol: placed in every clearing
   | 'allRuins' // Warm Sun Prophets: placed in every ruin
+  | 'allSuitsOnce'
   | 'forest' // (The Exile)
   | 'mapEdge'
   | 'matchFirstSuit' // Corvid Spies: 2nd placement must match 1st
@@ -205,6 +209,7 @@ export interface Hireling extends FactionExcludingComponent {
   isValidPlacement?: PlacementValidator
   placementRules?: HirelingRule[]
   placementCount?: number
+  warriorCount?: number
   allowSameClearing?: boolean
   autoPlacement?: 'allClearings' | 'allRuins'
 }
@@ -236,6 +241,8 @@ export interface Map extends GameComponent {
   defaultSuits?: ClearingSuit[]
   printedSuits?: boolean
   paths: FloodablePath[]
+  pathCoords?: [number, number][]
+  forestCoords?: [number, number][]
   backImage: string
   landmark?: MapLandmark
   floodImage?: string
@@ -302,6 +309,7 @@ export interface LargeMap extends Map {
   botPriorities?: never
   defaultSuits?: never
   paths: FloodablePath<FifteenIndex>[]
+  pathCoords?: [number, number][]
   landmark?: never
   floodImage: string
   suitLandmarks: Record<ClearingSuit, LandmarkCode>
@@ -403,8 +411,8 @@ export interface FlowSlice {
   selectedBots: BotCode[]
   step: SetupStep
   vagabondSetUp: boolean
-  placedLandmarks: Record<string, number>
-  placedHirelings: Record<string, number>
+  placedLandmarks: Record<string, number[]>
+  placedHirelings: Record<string, number[]>
 }
 
 //#endregion

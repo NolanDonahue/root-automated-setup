@@ -24,7 +24,7 @@ export const setUpMap: SetupStepDefinition = {
       dispatch(
         placeLandmark({
           code: landmarkCode,
-          clearingIndex: landmarkIndex,
+          clearingIndexes: [landmarkIndex],
         }),
       )
     }

@@ -44,8 +44,6 @@ export interface SetupState {
   limitVagabonds: boolean
   limitCaptains: boolean
   useHouserules: boolean
-  placedLandmarks: Record<string, number>
-  placedHirelings: Record<string, number>
   mountainLandmarkCode: string
 }
 
@@ -82,8 +80,6 @@ export const setupSlice = createSlice({
       limitVagabonds: false,
       limitCaptains: false,
       useHouserules: false,
-      placedLandmarks: {},
-      placedHirelings: {},
       mountainLandmarkCode: 'tower',
     }
   },
@@ -216,15 +212,6 @@ export const setupSlice = createSlice({
       state.errorMessage = null
     },
 
-    placeLandmark(state, action: PayloadAction<{ code: string; clearingIndex: number }>) {
-      state.placedLandmarks[action.payload.code] = action.payload.clearingIndex
-      state.errorMessage = null
-    },
-    placeHireling(state, action: PayloadAction<{ code: string; clearingIndex: number }>) {
-      state.placedHirelings[action.payload.code] = action.payload.clearingIndex
-      state.errorMessage = null
-    },
-
     toggleMountainLandmark(state) {
       // Flip the string between the two valid codes
       state.mountainLandmarkCode = state.mountainLandmarkCode === 'tower' ? 'city' : 'tower'
@@ -240,8 +227,6 @@ export const setupSlice = createSlice({
         state.clearings = []
         state.deck = null
         state.errorMessage = null
-        state.placedLandmarks = {}
-        state.placedHirelings = {}
         state.mountainLandmarkCode = 'tower'
       })
       // Clear internal variables when restarting setup
@@ -254,8 +239,6 @@ export const setupSlice = createSlice({
         state.excludedFactions = []
         state.limitVagabonds = false
         state.limitCaptains = false
-        state.placedLandmarks = {}
-        state.placedHirelings = {}
         state.mountainLandmarkCode = 'tower'
       })
       // This allows us to always reset the displayed error if the user makes a separate input

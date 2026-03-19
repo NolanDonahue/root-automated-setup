@@ -92,6 +92,8 @@ export const selectSetupMap = createSelector(
               : undefined,
           }
         }),
+        paths: setupMap.paths,
+        forests: setupMap.forestCoords ?? [],
         landmark: setupMap.landmark && {
           ...landmarkArray.find(({ code }) => code === setupMap.landmark!.code)!,
           ...setupMap.landmark,

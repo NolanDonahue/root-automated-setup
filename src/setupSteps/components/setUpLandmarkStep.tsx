@@ -73,7 +73,7 @@ const SetUpLandmarkStep: SetupStepComponent = ({ flowSlice }) => {
     if (!useHouserules && !validClearings.includes(clearingIndex)) {
       return
     }
-    dispatch(placeLandmark({ clearingIndex, code: selectedLandmark }))
+    dispatch(placeLandmark({ clearingIndexes: [clearingIndex], code: selectedLandmark }))
   }
 
   const noValidClearings = validClearings.length === 0

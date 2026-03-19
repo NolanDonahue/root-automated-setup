@@ -42,8 +42,8 @@ export interface FlowState {
   useDraft: boolean
   selectedBots: BotCode[]
   ruinPlacer: string | null
-  placedLandmarks: Record<string, number>
-  placedHirelings: Record<string, number>
+  placedLandmarks: Record<string, number[]>
+  placedHirelings: Record<string, number[]>
   mountainLandmarkCode: string
 }
 
@@ -323,11 +323,12 @@ export const flowSlice = createSlice({
       }
     },
 
-    placeLandmark: (state, action: PayloadAction<{ clearingIndex: number; code: string }>) => {
-      state.placedLandmarks[action.payload.code] = action.payload.clearingIndex
+    placeLandmark: (state, action: PayloadAction<{ code: string; clearingIndexes: number[] }>) => {
+      state.placedLandmarks[action.payload.code] = action.payload.clearingIndexes
     },
-    placeHireling: (state, action: PayloadAction<{ clearingIndex: number; code: string }>) => {
-      state.placedHirelings[action.payload.code] = action.payload.clearingIndex
+
+    placeHireling: (state, action: PayloadAction<{ code: string; clearingIndexes: number[] }>) => {
+      state.placedHirelings[action.payload.code] = action.payload.clearingIndexes
     },
   },
 
@@ -360,8 +361,8 @@ export const flowSlice = createSlice({
       vagabondSetUp: state => state.vagabondSetUp,
       selectedBots: state => state.selectedBots,
       ruinPlacer: state => state.ruinPlacer,
-      placeLandmark: state => state.placedLandmarks,
-      placeHireling: state => state.placedHirelings,
+      placedLandmarks: state => state.placedLandmarks,
+      placedHirelings: state => state.placedHirelings,
     }),
   },
 })

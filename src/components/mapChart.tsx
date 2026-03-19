@@ -7,7 +7,6 @@ import ruinBuilding from '../images/charts/markers/ruin.png'
 import { selectHirelingArray, selectLandmarkArray, selectSetupMap } from '../store'
 import LocaleText from './localeText'
 
-// Expanded the MapChart function to be able to handle clicks on the clearings for placing hirelings and landmarks, logic to display valid clearings, and adjusted maps to better handle new bot components
 interface MapData {
   code: string
   backImage: string
@@ -36,18 +35,19 @@ interface MapChartProps {
   onClearingClick?: (index: number) => void
   activeLandmark?: string
   validClearings?: number[]
+  selectedClearings?: number[]
   useHouserules?: boolean
 }
 
 const MapChart: React.FC<MapChartProps> = ({
-  // Expanded to handle the additional data and interfacing with the map by the user
   onClearingClick,
   validClearings = [],
+  selectedClearings = [],
   useHouserules = false,
 }) => {
   const map = useAppSelector(selectSetupMap) as MapData | null
 
-  const includeBots = useAppSelector(state => state.setup.botCount > 0) // Changed includeBots to be based around the bot count rather than the bool
+  const includeBots = useAppSelector(state => state.setup.botCount > 0)
   const placedLandmarks = useAppSelector(state => state.flow.placedLandmarks)
   const placedHirelings = useAppSelector(state => state.flow.placedHirelings)
   const landmarks = useAppSelector(selectLandmarkArray)
@@ -58,16 +58,27 @@ const MapChart: React.FC<MapChartProps> = ({
     const grouping: Record<number, { landmarks: typeof landmarks; hirelings: typeof hirelings }> =
       {}
 
-    Object.entries(placedLandmarks).forEach(([code, clearingIndex]) => {
-      grouping[clearingIndex] ??= { landmarks: [], hirelings: [] }
+    Object.entries(placedLandmarks).forEach(([code, clearingIndexes]) => {
       const def = landmarks.find(l => l.code === code)
-      if (def) grouping[clearingIndex].landmarks.push(def)
+      if (def) {
+        clearingIndexes.forEach(idx => {
+          grouping[idx] ??= { landmarks: [], hirelings: [] }
+          grouping[idx].landmarks.push(def)
+        })
+      }
     })
 
-    Object.entries(placedHirelings).forEach(([code, clearingIndex]) => {
-      grouping[clearingIndex] ??= { landmarks: [], hirelings: [] }
+    Object.entries(placedHirelings).forEach(([code, clearingIndexes]) => {
       const def = hirelings.find(h => h.code === code)
-      if (def) grouping[clearingIndex].hirelings.push(def)
+      if (def) {
+        const warriorCount = def.warriorCount ?? 1
+        clearingIndexes.forEach(idx => {
+          grouping[idx] ??= { landmarks: [], hirelings: [] }
+          for (let w = 0; w < warriorCount; w++) {
+            grouping[idx].hirelings.push(def)
+          }
+        })
+      }
     })
 
     return grouping
@@ -99,49 +110,16 @@ const MapChart: React.FC<MapChartProps> = ({
         className="background"
         href={map.backImage}
       />
-      {/* --- DEV TOOL: 100px GRID OVERLAY --- This is helpful when trying to read the map since the componentDefinitions are not necessarily intuitive
+      {/* --- DEV TOOL: 100px GRID OVERLAY ---
       {Array.from({ length: 11 }).map((_, i) => (
-        <g
-          key={`grid-${i}`}
-          style={{ pointerEvents: 'none' }}
-        >
-          <line
-            x1={0}
-            y1={i * 100}
-            x2={1000}
-            y2={i * 100}
-            stroke="rgba(255,255,255,0.4)"
-            strokeWidth="2"
-          />
-          <line
-            x1={i * 100}
-            y1={0}
-            x2={i * 100}
-            y2={1000}
-            stroke="rgba(255,255,255,0.4)"
-            strokeWidth="2"
-          />
-          <text
-            x={i * 100 + 5}
-            y={20}
-            fill="yellow"
-            fontSize="16"
-            fontWeight="bold"
-          >
-            {i * 100}
-          </text>
-          <text
-            x={5}
-            y={i * 100 - 5}
-            fill="yellow"
-            fontSize="16"
-            fontWeight="bold"
-          >
-            {i * 100}
-          </text>
+        <g key={`grid-${i}`} style={{ pointerEvents: 'none' }}>
+          <line x1={0} y1={i * 100} x2={1000} y2={i * 100} stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
+          <line x1={i * 100} y1={0} x2={i * 100} y2={1000} stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
+          <text x={i * 100 + 5} y={20} fill="yellow" fontSize="16" fontWeight="bold">{i * 100}</text>
+          <text x={5} y={i * 100 - 5} fill="yellow" fontSize="16" fontWeight="bold">{i * 100}</text>
         </g>
       ))}
-      {/* ------------------------------------ */}
+      ------------------------------------ */}
 
       {floodedClearings.length > 0 && map.floodImage ? (
         <>
@@ -171,53 +149,55 @@ const MapChart: React.FC<MapChartProps> = ({
           ? landmarks.find(l => l.code === suitLandmarkCode)
           : null
 
+        const isAlreadySelected = selectedClearings.includes(index)
         const isTargetValid = validClearings.includes(index)
-        const isClickable = onClearingClick != null && (isTargetValid || useHouserules)
+        const isClickable =
+          onClearingClick != null && !isAlreadySelected && (isTargetValid || useHouserules)
 
         let cursorStyle = 'default'
         if (onClearingClick != null) {
-          cursorStyle = isClickable ? 'pointer' : 'not-allowed'
+          cursorStyle = isAlreadySelected ? 'default' : isClickable ? 'pointer' : 'not-allowed'
         }
 
         return (
           <g
             key={index}
             onClick={() => {
-              if (isClickable) {
-                onClearingClick(index)
-              }
+              if (isClickable) onClearingClick(index)
             }}
             className={`clearing-group ${isClickable ? 'cursor-pointer' : ''}`}
             style={{ cursor: cursorStyle }}
           >
-            {/* --- DEV TOOL: CLEARING DATA LABELS --- This is helpful when trying to read the map since the componentDefinitions are not necessarily intuitive
-            <text
-              x={x}
-              y={y + 5}
-              fontSize="24"
-              fontWeight="900"
-              fill="cyan"
-              stroke="black"
-              strokeWidth="1.5"
-              textAnchor="middle"
-              style={{ pointerEvents: 'none', zIndex: 50 }}
-            >
+            {/* --- DEV TOOL: CLEARING DATA LABELS ---
+            <text x={x} y={y + 5} fontSize="24" fontWeight="900" fill="cyan" stroke="black"
+              strokeWidth="1.5" textAnchor="middle" style={{ pointerEvents: 'none', zIndex: 50 }}>
               [{index}] {x},{y}
             </text>
-            {/* -------------------------------------- */}
+            -------------------------------------- */}
 
             <title>
               <LocaleText i18nKey={flooded ? `label.clearing.flooded` : `label.clearing.${suit}`} />
             </title>
 
-            {/* Bounding circle for the clearing */}
             <circle
               cx={x}
               cy={y}
               r="90"
               fill="transparent"
             />
-            {isTargetValid && (
+
+            {isAlreadySelected && (
+              <circle
+                cx={x}
+                cy={y}
+                r="95"
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="6"
+              />
+            )}
+
+            {isTargetValid && !isAlreadySelected && (
               <circle
                 cx={x}
                 cy={y}
@@ -315,15 +295,14 @@ const MapChart: React.FC<MapChartProps> = ({
               </image>
             ) : null}
 
-            {/* Custom Houserule Placed Landmarks (Bottom-Left Quadrant) */}
+            {/* Placed Landmarks (Bottom-Left Quadrant) */}
             {clearingPieces.landmarks.map((landmark, i) => {
               const size = 75
               const imgX = x - size + 5 - i * 12
               const imgY = y + 5 + i * 12
-
               return (
                 <image
-                  key={`landmark-${landmark.code}`}
+                  key={`landmark-${landmark.code}-${i}`}
                   x={imgX}
                   y={imgY}
                   width={size}
@@ -342,10 +321,9 @@ const MapChart: React.FC<MapChartProps> = ({
               const size = 75
               const imgX = x - 5 + i * 22
               const imgY = y + 5 + i * 22
-
               return (
                 <image
-                  key={`hireling-${hireling.code}`}
+                  key={`hireling-${hireling.code}-${i}`}
                   x={imgX}
                   y={imgY}
                   width={size}

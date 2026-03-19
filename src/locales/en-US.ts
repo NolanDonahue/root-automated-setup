@@ -55,7 +55,6 @@ export default {
       suit: `<li>Collect the 12 suit markers, then place one in each clearing as shown in the chart below.</li>`,
       suitPriority: `<li>Collect the 12 suit and 12 priority markers, then place one of each in each clearing as shown in the chart below.</li>`,
     },
-    placementComplete: `Map position set!`,
     playerCount: `Player Count`,
     botCount: `Bot Count`,
     priority: `Priority {{count}}`,

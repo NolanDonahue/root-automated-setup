@@ -15,6 +15,7 @@ import {
   SETTING_HIRELING_COUNT,
   SETTING_LANDMARK_COUNT,
   SETTING_PLAYER_COUNT,
+  SETTING_USE_HOUSERULES,
 } from '../../constants'
 import { loadPersistedSetting, savePersistedSetting } from '../../functions/persistedSettings'
 import { resetState } from '../actions'
@@ -41,6 +42,7 @@ export interface SetupState {
   excludedFactions: FactionCode[]
   limitVagabonds: boolean
   limitCaptains: boolean
+  useHouserules: boolean
 }
 
 export const setupSlice = createSlice({
@@ -75,6 +77,7 @@ export const setupSlice = createSlice({
       excludedFactions: [],
       limitVagabonds: false,
       limitCaptains: false,
+      useHouserules: false,
     }
   },
 
@@ -127,6 +130,12 @@ export const setupSlice = createSlice({
       }
     },
 
+    setUseHouserules(state, { payload: useHouserules }: PayloadAction<boolean>) {
+      state.useHouserules = useHouserules
+      state.errorMessage = null
+      savePersistedSetting(SETTING_USE_HOUSERULES, useHouserules)
+    },
+
     setErrorMessage(state, { payload: errorMessage }: PayloadAction<string | null>) {
       state.errorMessage = errorMessage
     },
@@ -163,15 +172,23 @@ export const setupSlice = createSlice({
       }
     },
 
-    setHirelingCount(state, { payload: hirelingCount }: PayloadAction<number>) {
-      if (hirelingCount === 0 || hirelingCount === HIRELING_SETUP_COUNT) {
-        state.hirelingCount = hirelingCount
+    setHirelingCount(state, action: PayloadAction<number>) {
+      const count = action.payload
+      if (state.useHouserules) {
+        state.hirelingCount = Math.max(0, count)
         state.errorMessage = null
-        savePersistedSetting(SETTING_HIRELING_COUNT, hirelingCount)
+        savePersistedSetting(SETTING_HIRELING_COUNT, count)
       } else {
-        console.warn(
-          `Invalid payload for setHirelingCount action: ${hirelingCount} (Payload must either be 0 or ${HIRELING_SETUP_COUNT})`,
-        )
+        if (count === 0 || count === HIRELING_SETUP_COUNT) {
+          state.hirelingCount = count
+          state.errorMessage = null
+          savePersistedSetting(SETTING_HIRELING_COUNT, count)
+        } else {
+          console.warn(
+            `Invalid payload for setHirelingCount action: ${count} (Payload must either be 0 or ${HIRELING_SETUP_COUNT})`,
+          )
+          state.hirelingCount = count > 0 ? HIRELING_SETUP_COUNT : 0
+        }
       }
     },
 
@@ -247,6 +264,7 @@ export const {
   setMap,
   setPlayerCount,
   setBotCount,
+  setUseHouserules,
 } = setupSlice.actions
 
 export const { selectTwoPlayer, selectSetupClearings, selectSetupDeckCode, selectSetupMapCode } =

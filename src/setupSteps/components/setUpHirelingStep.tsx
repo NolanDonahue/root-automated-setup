@@ -4,12 +4,19 @@ import type { SetupStepComponent } from '..'
 import type { Expansion, Hireling, SetupClearing, SetupMapState } from '../../types'
 
 import * as componentDefinitions from '../../componentDefinitions'
+import Checkbox from '../../components/checkbox'
 import LocaleText from '../../components/localeText'
 import MapChart from '../../components/mapChart'
 import Section from '../../components/section'
 import { validateHirelingPlacement } from '../../functions/validation'
 import { useAppDispatch, useAppSelector, usePlayerNumber } from '../../hooks'
-import { placeHireling, selectSetupMap } from '../../store'
+import {
+  addToHirelingPool,
+  placeHireling,
+  removeCurrentHirelingFromPool,
+  selectSetupMap,
+  setCurrentIndex,
+} from '../../store'
 
 const ROLLABLE_SUITS = ['fox', 'mouse', 'rabbit'] as const
 const rolledSuit = ROLLABLE_SUITS[Math.floor(Math.random() * ROLLABLE_SUITS.length)]
@@ -198,10 +205,28 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     },
   }
 
+  // ── Demote / promote toggle
+  const demotePromoteHireling = (code: string, demoted: boolean) => {
+    dispatch(removeCurrentHirelingFromPool())
+    dispatch(addToHirelingPool(code, !demoted))
+    dispatch(setCurrentIndex(hirelingPool.length - 1))
+  }
+
+  const demotePromoteCheckbox = (
+    <Checkbox
+      labelKey={selectedHireling.demoted ? 'label.askPromoteHireling' : 'label.askDemoteHireling'}
+      defaultValue={selectedHireling.demoted}
+      onChange={() => {
+        demotePromoteHireling(selectedHireling.code, selectedHireling.demoted)
+      }}
+    />
+  )
+
   // ── Auto-placement: reference map, placements recorded automatically ─────
   if (isAutoPlacement && !selectedHireling.demoted) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
+        {demotePromoteCheckbox}
         <MapChart useHouserules={useHouserules} />
         <div>
           <p>
@@ -216,6 +241,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   if (isForestPlacement && !selectedHireling.demoted) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
+        {demotePromoteCheckbox}
         <MapChart
           onForestClick={placementComplete ? undefined : handleForestClick}
           validForestIndexes={validForestIndexes}
@@ -244,6 +270,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   if (isPathPlacement && !selectedHireling.demoted) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
+        {demotePromoteCheckbox}
         <MapChart
           onPathClick={placementComplete ? undefined : handlePathClick}
           validPathIndexes={validPathIndexes}
@@ -272,6 +299,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   if (!selectedHireling.demoted) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
+        {demotePromoteCheckbox}
         <MapChart
           onClearingClick={placementComplete ? undefined : handleClearingClick}
           useHouserules={useHouserules}
@@ -291,15 +319,17 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
         </div>
       </Section>
     )
-  } else {
-    return (
-      <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
-        <p>
-          <LocaleText {...sharedSetupProps} />
-        </p>
-      </Section>
-    )
   }
+
+  // ── Demoted: no map interaction, setup text only ──────────────────────────
+  return (
+    <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
+      {demotePromoteCheckbox}
+      <p>
+        <LocaleText {...sharedSetupProps} />
+      </p>
+    </Section>
+  )
 }
 
 export default SetUpHirelingStep

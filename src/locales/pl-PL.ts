@@ -2,6 +2,8 @@ export default {
   label: {
     ability: `Zdolność`,
     aggression: `Agresja`,
+    askDemoteHireling: `Do you want to demote this hireling?`,
+    askPromoteHireling: `Do you want to promote this hirelings?`,
     balancedSuits: {
       false: `Losowe rozmieszczenie symboli polan`,
       true: `Zrównoważone rozmieszczenie symboli polan`,

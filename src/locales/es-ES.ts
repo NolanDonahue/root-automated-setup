@@ -1,6 +1,8 @@
 export default {
   label: {
     aggression: `Agresividad`,
+    askDemoteHireling: `Do you want to demote this hireling?`,
+    askPromoteHireling: `Do you want to promote this hirelings?`,
     balancedSuits: {
       false: `Colocación de claros aleatorios`,
       true: `Colocación de claros equilibrada`,

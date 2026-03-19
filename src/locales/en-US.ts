@@ -2,6 +2,8 @@ export default {
   label: {
     ability: `Ability`,
     aggression: `Aggression`,
+    askDemoteHireling: `Do you want to demote this hireling?`,
+    askPromoteHireling: `Do you want to promote this hirelings?`,
     balancedSuits: {
       false: `Random clearing suit placement`,
       true: `Balanced clearing suit placement`,

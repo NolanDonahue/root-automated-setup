@@ -1,6 +1,8 @@
 export default {
   label: {
     aggression: `Aggressività`,
+    askDemoteHireling: `Do you want to demote this hireling?`,
+    askPromoteHireling: `Do you want to promote this hirelings?`,
     balancedSuits: {
       false: `Piazzamento simboli radura casuale`,
       true: `Piazzamento simboli radura bilanciato`,

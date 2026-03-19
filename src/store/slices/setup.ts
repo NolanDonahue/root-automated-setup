@@ -14,6 +14,7 @@ import {
   SETTING_FIXED_FIRST_PLAYER,
   SETTING_HIRELING_COUNT,
   SETTING_LANDMARK_COUNT,
+  SETTING_MOUNTAIN_LANDMARK,
   SETTING_PLAYER_COUNT,
   SETTING_USE_HOUSERULES,
 } from '../../constants'
@@ -43,6 +44,9 @@ export interface SetupState {
   limitVagabonds: boolean
   limitCaptains: boolean
   useHouserules: boolean
+  placedLandmarks: Record<string, number>
+  placedHirelings: Record<string, number>
+  mountainLandmarkCode: string
 }
 
 export const setupSlice = createSlice({
@@ -78,6 +82,9 @@ export const setupSlice = createSlice({
       limitVagabonds: false,
       limitCaptains: false,
       useHouserules: false,
+      placedLandmarks: {},
+      placedHirelings: {},
+      mountainLandmarkCode: 'tower',
     }
   },
 
@@ -208,6 +215,21 @@ export const setupSlice = createSlice({
       state.limitCaptains = limitCaptains
       state.errorMessage = null
     },
+
+    placeLandmark(state, action: PayloadAction<{ code: string; clearingIndex: number }>) {
+      state.placedLandmarks[action.payload.code] = action.payload.clearingIndex
+      state.errorMessage = null
+    },
+    placeHireling(state, action: PayloadAction<{ code: string; clearingIndex: number }>) {
+      state.placedHirelings[action.payload.code] = action.payload.clearingIndex
+      state.errorMessage = null
+    },
+
+    toggleMountainLandmark(state) {
+      // Flip the string between the two valid codes
+      state.mountainLandmarkCode = state.mountainLandmarkCode === 'tower' ? 'city' : 'tower'
+      savePersistedSetting(SETTING_MOUNTAIN_LANDMARK, state.mountainLandmarkCode)
+    },
   },
 
   extraReducers(builder) {
@@ -218,6 +240,9 @@ export const setupSlice = createSlice({
         state.clearings = []
         state.deck = null
         state.errorMessage = null
+        state.placedLandmarks = {}
+        state.placedHirelings = {}
+        state.mountainLandmarkCode = 'tower'
       })
       // Clear internal variables when restarting setup
       .addCase(resetState, state => {
@@ -229,6 +254,9 @@ export const setupSlice = createSlice({
         state.excludedFactions = []
         state.limitVagabonds = false
         state.limitCaptains = false
+        state.placedLandmarks = {}
+        state.placedHirelings = {}
+        state.mountainLandmarkCode = 'tower'
       })
       // This allows us to always reset the displayed error if the user makes a separate input
       .addDefaultCase(state => {
@@ -264,6 +292,7 @@ export const {
   setPlayerCount,
   setBotCount,
   setUseHouserules,
+  toggleMountainLandmark,
 } = setupSlice.actions
 
 export const { selectTwoPlayer, selectSetupClearings, selectSetupDeckCode, selectSetupMapCode } =

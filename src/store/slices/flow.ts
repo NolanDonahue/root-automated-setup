@@ -42,6 +42,9 @@ export interface FlowState {
   useDraft: boolean
   selectedBots: BotCode[]
   ruinPlacer: string | null
+  placedLandmarks: Record<string, number>
+  placedHirelings: Record<string, number>
+  mountainLandmarkCode: string
 }
 
 const getSlice = (flowState: FlowState): FlowSlice => ({
@@ -57,6 +60,8 @@ const getSlice = (flowState: FlowState): FlowSlice => ({
   vagabondSetUp: flowState.vagabondSetUp,
   selectedBots: [...flowState.selectedBots],
   ruinPlacer: flowState.ruinPlacer,
+  placedLandmarks: { ...flowState.placedLandmarks },
+  placedHirelings: { ...flowState.placedHirelings },
 })
 
 const applySlice = (state: FlowState, slice: FlowSlice) => {
@@ -71,6 +76,8 @@ const applySlice = (state: FlowState, slice: FlowSlice) => {
   state.selectedBots = slice.selectedBots
   state.botPool = slice.botPool
   state.ruinPlacer = slice.ruinPlacer
+  state.placedLandmarks = slice.placedLandmarks
+  state.placedHirelings = slice.placedHirelings
 }
 
 const initialState: FlowState = {
@@ -87,7 +94,10 @@ const initialState: FlowState = {
   futureSteps: [],
   selectedBots: [],
   useDraft: true,
+  placedLandmarks: {},
+  placedHirelings: {},
   ruinPlacer: null,
+  mountainLandmarkCode: 'tower',
 }
 
 export const flowSlice = createSlice({
@@ -312,6 +322,13 @@ export const flowSlice = createSlice({
         )
       }
     },
+
+    placeLandmark: (state, action: PayloadAction<{ clearingIndex: number; code: string }>) => {
+      state.placedLandmarks[action.payload.code] = action.payload.clearingIndex
+    },
+    placeHireling: (state, action: PayloadAction<{ clearingIndex: number; code: string }>) => {
+      state.placedHirelings[action.payload.code] = action.payload.clearingIndex
+    },
   },
 
   extraReducers(builder) {
@@ -343,6 +360,8 @@ export const flowSlice = createSlice({
       vagabondSetUp: state => state.vagabondSetUp,
       selectedBots: state => state.selectedBots,
       ruinPlacer: state => state.ruinPlacer,
+      placeLandmark: state => state.placedLandmarks,
+      placeHireling: state => state.placedHirelings,
     }),
   },
 })
@@ -369,6 +388,8 @@ export const {
   setUseDraft,
   undoStep,
   resetStep,
+  placeLandmark,
+  placeHireling,
 } = flowSlice.actions
 
 export const { selectFlowSlice, selectBotPool } = flowSlice.selectors

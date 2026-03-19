@@ -160,15 +160,14 @@ export const setupSlice = createSlice({
       state.deck = deckCode
     },
 
-    setLandmarkCount(state, { payload: landmarkCount }: PayloadAction<number>) {
-      if (landmarkCount >= 0 && landmarkCount <= MAX_LANDMARKS) {
-        state.landmarkCount = landmarkCount
+    setLandmarkCount(state, landmarkCount: PayloadAction<number>) {
+      if (state.useHouserules) {
+        state.landmarkCount = Math.max(0, landmarkCount.payload)
         state.errorMessage = null
         savePersistedSetting(SETTING_LANDMARK_COUNT, landmarkCount)
       } else {
-        console.warn(
-          `Invalid payload for setLandmarkCount action: ${landmarkCount} (Payload must be a number between 0 and ${MAX_LANDMARKS})`,
-        )
+        console.warn(`Invalid payload for setLandmarkCount action.`)
+        state.landmarkCount = Math.max(0, Math.min(landmarkCount.payload, MAX_LANDMARKS))
       }
     },
 

@@ -10,13 +10,13 @@ import { selectLandmarkArray, selectSetupMap, setLandmarkCount, toggleLandmark }
 const ChooseLandmarksStep: SetupStepComponent = () => {
   const landmarkCount = useAppSelector(state => state.setup.landmarkCount)
   const setupMap = useAppSelector(selectSetupMap) as { useLandmark?: boolean } | null
-  const useHouseRules = useAppSelector(state => state.setup.useHouserules)
+  const useHouserules = useAppSelector(state => state.setup.useHouserules)
   const landmarks = useAppSelector(selectLandmarkArray)
   const dispatch = useAppDispatch()
 
   if (!setupMap) return null
   const enabledLandmarkCount = landmarks.filter(landmark => landmark.enabled).length
-  const maxAllowed = useHouseRules ? enabledLandmarkCount : MAX_LANDMARKS
+  const maxAllowed = useHouserules ? enabledLandmarkCount : MAX_LANDMARKS
 
   return (
     <Section

@@ -11,7 +11,7 @@ import { selectHirelingArray, setHirelingCount, toggleHireling } from '../../sto
 const ChooseHirelingsStep: SetupStepComponent = () => {
   const includeHirelings = useAppSelector(state => state.setup.hirelingCount > 0)
   const dispatch = useAppDispatch()
-  const useHouseRules = useAppSelector(state => state.setup.useHouserules)
+  const useHouserules = useAppSelector(state => state.setup.useHouserules)
   const hirelingCount = useAppSelector(state => state.setup.hirelingCount)
   const hirelings = useAppSelector(selectHirelingArray)
 
@@ -28,7 +28,7 @@ const ChooseHirelingsStep: SetupStepComponent = () => {
         defaultValue={includeHirelings}
         onChange={checked => dispatch(setHirelingCount(checked ? HIRELING_SETUP_COUNT : 0))}
       />
-      {includeHirelings && useHouseRules ? (
+      {includeHirelings && useHouserules ? (
         <NumberSelector
           labelKey="label.hirelingCount"
           value={hirelingCount}

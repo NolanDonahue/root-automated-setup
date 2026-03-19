@@ -6,19 +6,15 @@ import { useAppSelector } from '../../hooks'
 import { selectBotArray } from '../../store'
 
 const SelectBotsStep: SetupStepComponent = ({ flowSlice }) => {
-  const currentPickNumber = flowSlice.botPool.length + 1
+  const currentPickNumber = flowSlice.selectedBots.length + 1
 
-  // 1. Get dynamic array of available bots based on chosen expansions
   const allBots = useAppSelector(selectBotArray)
 
-  // 2. Filter out bots already in the pool
-  const availableBots = allBots.filter(
-    b => !flowSlice.botPool.some(poolBot => poolBot.code === b.code),
-  )
+  const availableBots = allBots.filter(b => flowSlice.botPool.includes(b.code))
 
   return (
     <Section
-      key={flowSlice.botPool.length}
+      key={flowSlice.selectedBots.length}
       subtitleKey="setupStep.selectBots.subtitle"
       textKey="setupStep.selectBots.body"
       translationOptions={{ count: currentPickNumber }}
@@ -29,7 +25,7 @@ const SelectBotsStep: SetupStepComponent = ({ flowSlice }) => {
           selector={() => () => availableBots}
           getLabelKey={bot => `bot.${bot.code}.name`}
           getSetupTitleKey={bot => `bot.${bot.code}.name`}
-          getSetupKey={() => 'label.selectThisBot'}
+          getSetupKey={() => ''}
         />
       </div>
     </Section>

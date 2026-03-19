@@ -45,6 +45,7 @@ export const SUIT_CLEARING_COUNT = 4
 
 /** A static list of Root game component types. */
 export const COMPONENT_TYPES = [
+  'bots',
   'captains',
   'decks',
   'factions',
@@ -116,10 +117,11 @@ export const USE_LANDMARK_KEY = 'useLandmark'
 export const SETTING_BALANCED_SUITS = 'balancedSuits'
 export const SETTING_FIXED_FIRST_PLAYER = 'fixedFirstPlayer'
 export const SETTING_HIRELING_COUNT = 'hirelingCount'
-export const SETTING_INCLUDE_BOTS = 'includeBotStep'
 export const SETTING_LANDMARK_COUNT = 'landmarkCount'
 export const SETTING_PLAYER_COUNT = 'playerCount'
+export const SETTING_BOT_COUNT = 'botCount'
 export const SETTING_USE_DRAFT = 'useDraft'
+export const SETTING_USE_HOUSERULES = 'useHouserules'
 
 export const LEGACY_SETTING_INCLUDE_HIRELINGS = 'includeHirelings'
 

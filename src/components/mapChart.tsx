@@ -29,6 +29,8 @@ interface MapData {
     flooded?: boolean
     ruin?: boolean
   }[]
+  pathCoords: [number, number][]
+  forestCoords: [number, number][]
 }
 
 interface MapChartProps {
@@ -36,13 +38,26 @@ interface MapChartProps {
   activeLandmark?: string
   validClearings?: number[]
   selectedClearings?: number[]
+  validForestIndexes?: number[]
+  selectedForestIndexes?: number[]
+  onForestClick?: (index: number) => void
+  validPathIndexes?: number[]
+  selectedPathIndexes?: number[]
+  onPathClick?: (index: number) => void
   useHouserules?: boolean
 }
+const ZONE_RADIUS = 50
 
 const MapChart: React.FC<MapChartProps> = ({
   onClearingClick,
   validClearings = [],
   selectedClearings = [],
+  validForestIndexes = [],
+  selectedForestIndexes = [],
+  onForestClick,
+  validPathIndexes = [],
+  selectedPathIndexes = [],
+  onPathClick,
   useHouserules = false,
 }) => {
   const map = useAppSelector(selectSetupMap) as MapData | null
@@ -54,34 +69,67 @@ const MapChart: React.FC<MapChartProps> = ({
   const hirelings = useAppSelector(selectHirelingArray)
   const mountainLandmarkCode = useAppSelector(state => state.setup.mountainLandmarkCode)
 
-  const piecesByClearing = React.useMemo(() => {
-    const grouping: Record<number, { landmarks: typeof landmarks; hirelings: typeof hirelings }> =
-      {}
+  /**
+   * Clearings → which landmark/hireling images to stack there. Forest and path hirelings are
+   * intentionally excluded here — their stored indexes are zone indexes, not clearing indexes. They
+   * render in the forest/path zone loops below using piecesByForestZone / piecesByPathZone.
+   */
+  const { piecesByClearing, piecesByForestZone, piecesByPathZone } = React.useMemo(() => {
+    const clearingGrouping: Record<
+      number,
+      { landmarks: typeof landmarks; hirelings: typeof hirelings }
+    > = {}
+    const forestGrouping: Record<number, typeof hirelings> = {}
+    const pathGrouping: Record<number, typeof hirelings> = {}
 
     Object.entries(placedLandmarks).forEach(([code, clearingIndexes]) => {
       const def = landmarks.find(l => l.code === code)
       if (def) {
         clearingIndexes.forEach(idx => {
-          grouping[idx] ??= { landmarks: [], hirelings: [] }
-          grouping[idx].landmarks.push(def)
+          clearingGrouping[idx] ??= { landmarks: [], hirelings: [] }
+          clearingGrouping[idx].landmarks.push(def)
         })
       }
     })
 
-    Object.entries(placedHirelings).forEach(([code, clearingIndexes]) => {
+    Object.entries(placedHirelings).forEach(([code, storedIndexes]) => {
       const def = hirelings.find(h => h.code === code)
-      if (def) {
-        const warriorCount = def.warriorCount ?? 1
-        clearingIndexes.forEach(idx => {
-          grouping[idx] ??= { landmarks: [], hirelings: [] }
+      if (!def) return
+      const rules = def.placementRules ?? []
+      const warriorCount = def.warriorCount ?? 1
+
+      if (rules.includes('forest')) {
+        // storedIndexes are forest zone indexes
+        storedIndexes.forEach(idx => {
+          forestGrouping[idx] ??= []
           for (let w = 0; w < warriorCount; w++) {
-            grouping[idx].hirelings.push(def)
+            forestGrouping[idx].push(def)
+          }
+        })
+      } else if (rules.includes('path')) {
+        // storedIndexes are path zone indexes
+        storedIndexes.forEach(idx => {
+          pathGrouping[idx] ??= []
+          for (let w = 0; w < warriorCount; w++) {
+            pathGrouping[idx].push(def)
+          }
+        })
+      } else {
+        // storedIndexes are clearing indexes
+        storedIndexes.forEach(idx => {
+          clearingGrouping[idx] ??= { landmarks: [], hirelings: [] }
+          for (let w = 0; w < warriorCount; w++) {
+            clearingGrouping[idx].hirelings.push(def)
           }
         })
       }
     })
 
-    return grouping
+    return {
+      piecesByClearing: clearingGrouping,
+      piecesByForestZone: forestGrouping,
+      piecesByPathZone: pathGrouping,
+    }
   }, [placedLandmarks, placedHirelings, landmarks, hirelings])
 
   if (!map) return null
@@ -110,16 +158,6 @@ const MapChart: React.FC<MapChartProps> = ({
         className="background"
         href={map.backImage}
       />
-      {/* --- DEV TOOL: 100px GRID OVERLAY ---
-      {Array.from({ length: 11 }).map((_, i) => (
-        <g key={`grid-${i}`} style={{ pointerEvents: 'none' }}>
-          <line x1={0} y1={i * 100} x2={1000} y2={i * 100} stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
-          <line x1={i * 100} y1={0} x2={i * 100} y2={1000} stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
-          <text x={i * 100 + 5} y={20} fill="yellow" fontSize="16" fontWeight="bold">{i * 100}</text>
-          <text x={5} y={i * 100 - 5} fill="yellow" fontSize="16" fontWeight="bold">{i * 100}</text>
-        </g>
-      ))}
-      ------------------------------------ */}
 
       {floodedClearings.length > 0 && map.floodImage ? (
         <>
@@ -142,6 +180,149 @@ const MapChart: React.FC<MapChartProps> = ({
         </>
       ) : null}
 
+      {/* ── Forest zones ─────────────────────────────────────────────────────── */}
+      {map.forestCoords.map(([x, y], index) => {
+        const isSelected = selectedForestIndexes.includes(index)
+        const isValid = validForestIndexes.includes(index)
+        const isClickable = onForestClick != null && !isSelected && (isValid || useHouserules)
+        const zonePieces = piecesByForestZone[index] ?? []
+
+        return (
+          <g
+            key={`forest-${index}`}
+            onClick={() => {
+              if (isClickable) onForestClick(index)
+            }}
+            style={{ cursor: isSelected ? 'default' : isClickable ? 'pointer' : 'default' }}
+          >
+            <title>
+              <LocaleText i18nKey="label.forest" />
+            </title>
+
+            <circle
+              cx={x}
+              cy={y}
+              r={ZONE_RADIUS}
+              fill="transparent"
+            />
+
+            {isSelected && (
+              <circle
+                cx={x}
+                cy={y}
+                r={ZONE_RADIUS + 5}
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="6"
+              />
+            )}
+
+            {isValid && !isSelected && (
+              <circle
+                cx={x}
+                cy={y}
+                r={ZONE_RADIUS + 5}
+                fill="rgba(34,197,94,0.15)"
+                stroke="#22c55e"
+                strokeWidth="4"
+                strokeDasharray="8 4"
+              />
+            )}
+
+            {/* Hirelings placed in this forest zone */}
+            {zonePieces.map((hireling, i) => {
+              const size = 60
+              return (
+                <image
+                  key={`forest-hireling-${hireling.code}-${i}`}
+                  x={x - size / 2 + i * 18}
+                  y={y - size / 2 + i * 18}
+                  width={size}
+                  height={size}
+                  href={hireling.image}
+                >
+                  <title>
+                    <LocaleText i18nKey={`hireling.${hireling.code}.name`} />
+                  </title>
+                </image>
+              )
+            })}
+          </g>
+        )
+      })}
+
+      {/* ── Path zones ───────────────────────────────────────────────────────── */}
+      {map.pathCoords.map(([x, y], index) => {
+        const isSelected = selectedPathIndexes.includes(index)
+        const isValid = validPathIndexes.includes(index)
+        const isClickable = onPathClick != null && !isSelected && (isValid || useHouserules)
+        const zonePieces = piecesByPathZone[index] ?? []
+
+        return (
+          <g
+            key={`path-${index}`}
+            onClick={() => {
+              if (isClickable) onPathClick(index)
+            }}
+            style={{ cursor: isSelected ? 'default' : isClickable ? 'pointer' : 'default' }}
+          >
+            <title>
+              <LocaleText i18nKey="label.path" />
+            </title>
+
+            <circle
+              cx={x}
+              cy={y}
+              r={ZONE_RADIUS}
+              fill="transparent"
+            />
+
+            {isSelected && (
+              <circle
+                cx={x}
+                cy={y}
+                r={ZONE_RADIUS + 5}
+                fill="none"
+                stroke="#f97316"
+                strokeWidth="6"
+              />
+            )}
+
+            {isValid && !isSelected && (
+              <circle
+                cx={x}
+                cy={y}
+                r={ZONE_RADIUS + 5}
+                fill="rgba(251,191,36,0.15)"
+                stroke="#fbbf24"
+                strokeWidth="4"
+                strokeDasharray="8 4"
+              />
+            )}
+
+            {/* Hirelings placed on this path zone */}
+            {zonePieces.map((hireling, i) => {
+              const size = 60
+              return (
+                <image
+                  key={`path-hireling-${hireling.code}-${i}`}
+                  x={x - size / 2 + i * 18}
+                  y={y - size / 2 + i * 18}
+                  width={size}
+                  height={size}
+                  href={hireling.image}
+                >
+                  <title>
+                    <LocaleText i18nKey={`hireling.${hireling.code}.name`} />
+                  </title>
+                </image>
+              )
+            })}
+          </g>
+        )
+      })}
+
+      {/* ── Clearings ────────────────────────────────────────────────────────── */}
       {map.clearings.map(({ x, y, suit, flooded, ruin }, index) => {
         const clearingPieces = piecesByClearing[index] ?? { landmarks: [], hirelings: [] }
         const suitLandmarkCode = suit ? map.suitLandmarks?.[suit] : null
@@ -168,13 +349,6 @@ const MapChart: React.FC<MapChartProps> = ({
             className={`clearing-group ${isClickable ? 'cursor-pointer' : ''}`}
             style={{ cursor: cursorStyle }}
           >
-            {/* --- DEV TOOL: CLEARING DATA LABELS ---
-            <text x={x} y={y + 5} fontSize="24" fontWeight="900" fill="cyan" stroke="black"
-              strokeWidth="1.5" textAnchor="middle" style={{ pointerEvents: 'none', zIndex: 50 }}>
-              [{index}] {x},{y}
-            </text>
-            -------------------------------------- */}
-
             <title>
               <LocaleText i18nKey={flooded ? `label.clearing.flooded` : `label.clearing.${suit}`} />
             </title>
@@ -298,13 +472,11 @@ const MapChart: React.FC<MapChartProps> = ({
             {/* Placed Landmarks (Bottom-Left Quadrant) */}
             {clearingPieces.landmarks.map((landmark, i) => {
               const size = 75
-              const imgX = x - size + 5 - i * 12
-              const imgY = y + 5 + i * 12
               return (
                 <image
                   key={`landmark-${landmark.code}-${i}`}
-                  x={imgX}
-                  y={imgY}
+                  x={x - size + 5 - i * 12}
+                  y={y + 5 + i * 12}
                   width={size}
                   height={size}
                   href={landmark.image}
@@ -319,13 +491,11 @@ const MapChart: React.FC<MapChartProps> = ({
             {/* Placed Hirelings (Bottom-Right Quadrant) */}
             {clearingPieces.hirelings.map((hireling, i) => {
               const size = 75
-              const imgX = x - 5 + i * 22
-              const imgY = y + 5 + i * 22
               return (
                 <image
                   key={`hireling-${hireling.code}-${i}`}
-                  x={imgX}
-                  y={imgY}
+                  x={x - 5 + i * 22}
+                  y={y + 5 + i * 22}
                   width={size}
                   height={size}
                   href={hireling.image}
@@ -336,6 +506,152 @@ const MapChart: React.FC<MapChartProps> = ({
                 </image>
               )
             })}
+
+            {/*
+      ============================================================
+      DEV TOOLS — uncomment the blocks you need, recomment when done
+      ============================================================*/}
+
+            {/*// ── GRID OVERLAY: 100px grid with axis labels ────────────────────────*/}
+            {Array.from({ length: 11 }).map((_, i) => (
+              <g
+                key={`grid-${i}`}
+                style={{ pointerEvents: 'none' }}
+              >
+                <line
+                  x1={0}
+                  y1={i * 100}
+                  x2={1000}
+                  y2={i * 100}
+                  stroke="rgba(255,255,255,0.4)"
+                  strokeWidth="2"
+                />
+                <line
+                  x1={i * 100}
+                  y1={0}
+                  x2={i * 100}
+                  y2={1000}
+                  stroke="rgba(255,255,255,0.4)"
+                  strokeWidth="2"
+                />
+                <text
+                  x={i * 100 + 5}
+                  y={20}
+                  fill="yellow"
+                  fontSize="16"
+                  fontWeight="bold"
+                >
+                  {i * 100}
+                </text>
+                <text
+                  x={5}
+                  y={i * 100 - 5}
+                  fill="yellow"
+                  fontSize="16"
+                  fontWeight="bold"
+                >
+                  {i * 100}
+                </text>
+              </g>
+            ))}
+
+            {/*// ── CLEARING LABELS: index, x, y for each clearing ───────────────────*/}
+            {map.clearings.map(({ x, y }, i) => (
+              <text
+                key={`clabel-${i}`}
+                x={x}
+                y={y + 5}
+                fontSize="24"
+                fontWeight="900"
+                fill="cyan"
+                stroke="black"
+                strokeWidth="1.5"
+                textAnchor="middle"
+                style={{ pointerEvents: 'none' }}
+              >
+                [{i}] {x},{y}
+              </text>
+            ))}
+
+            {/*// ── PATH COORD MARKERS: X at each pathCoords entry ───────────────────*/}
+            {map.pathCoords.map(([x, y], i) => (
+              <g
+                key={`pmark-${i}`}
+                style={{ pointerEvents: 'none' }}
+              >
+                <line
+                  x1={x - 12}
+                  y1={y - 12}
+                  x2={x + 12}
+                  y2={y + 12}
+                  stroke="#f97316"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1={x + 12}
+                  y1={y - 12}
+                  x2={x - 12}
+                  y2={y + 12}
+                  stroke="#f97316"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <text
+                  x={x}
+                  y={y - 16}
+                  fontSize="16"
+                  fontWeight="bold"
+                  fill="#f97316"
+                  stroke="black"
+                  strokeWidth="1"
+                  textAnchor="middle"
+                >
+                  P{i}
+                </text>
+              </g>
+            ))}
+
+            {/*// ── FOREST COORD MARKERS: X at each forestCoords entry ───────────────*/}
+            {map.forestCoords.map(([x, y], i) => (
+              <g
+                key={`fmark-${i}`}
+                style={{ pointerEvents: 'none' }}
+              >
+                <line
+                  x1={x - 12}
+                  y1={y - 12}
+                  x2={x + 12}
+                  y2={y + 12}
+                  stroke="#22c55e"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1={x + 12}
+                  y1={y - 12}
+                  x2={x - 12}
+                  y2={y + 12}
+                  stroke="#22c55e"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <text
+                  x={x}
+                  y={y - 16}
+                  fontSize="16"
+                  fontWeight="bold"
+                  fill="#22c55e"
+                  stroke="black"
+                  strokeWidth="1"
+                  textAnchor="middle"
+                >
+                  F{i}
+                </text>
+              </g>
+            ))}
+
+            {/*============================================================ */}
           </g>
         )
       })}

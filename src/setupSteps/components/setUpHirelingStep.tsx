@@ -41,14 +41,17 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     }
   }
 
+  const rules = hirelingDef?.placementRules ?? []
   const placementCount = hirelingDef?.placementCount ?? 1
 
-  // Clearings already recorded for this hireling in the current step
+  const isAutoPlacement = rules.includes('allClearings') || rules.includes('allRuins')
+  const isForestPlacement = rules.includes('forest')
+  const isPathPlacement = rules.includes('path')
+
   const currentSelections: number[] = selectedHireling
     ? (placedHirelings[selectedHireling.code] ?? [])
     : []
 
-  // Whether all required placements have been made
   const placementComplete = currentSelections.length >= placementCount
 
   const randomRolledSuit = useMemo(() => {
@@ -56,14 +59,10 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     return rolledSuit
   }, [hirelingDef?.placementRules])
 
-  const rules = hirelingDef?.placementRules ?? []
-  const isAutoPlacement = !!hirelingDef?.autoPlacement
-  const isForestPlacement = rules.includes('forest')
-  const isPathPlacement = rules.includes('path')
-
-  // Auto-dispatch allClearings / allRuins without user interaction
+  // Auto-dispatch for allClearings / allRuins — no user interaction required.
   useEffect(() => {
     if (!selectedHireling || !hirelingDef || !mapData || !isAutoPlacement) return
+    if ((placedHirelings[selectedHireling.code]?.length ?? 0) > 0) return
 
     const autoIndexes: number[] = []
     mapData.clearings.forEach((baseClearing, i) => {
@@ -94,6 +93,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     hirelingDef,
     isAutoPlacement,
     mapData,
+    placedHirelings,
     selectedHireling,
     selectedHireling?.code,
     setupState.clearings,
@@ -101,7 +101,8 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
 
   if (!selectedHireling || !mapData) return null
 
-  // Build valid clearing list only for interactive placement modes
+  // ── Clearing-based placement ─────────────────────────────────────────────
+
   const validClearings: number[] = []
   if (
     hirelingDef &&
@@ -125,7 +126,6 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
         mapData as unknown as SetupMapState,
         randomRolledSuit,
       )
-
       const passesCustomRules = hirelingDef.isValidPlacement
         ? hirelingDef.isValidPlacement(
             i,
@@ -135,16 +135,13 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
           )
         : true
 
-      if (passesTagRules && passesCustomRules) {
-        validClearings.push(i)
-      }
+      if (passesTagRules && passesCustomRules) validClearings.push(i)
     })
   }
 
   const handleClearingClick = (clearingIndex: number) => {
     if (placementComplete) return
     if (!useHouserules && !validClearings.includes(clearingIndex)) return
-
     dispatch(
       placeHireling({
         clearingIndexes: [...currentSelections, clearingIndex],
@@ -153,7 +150,46 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     )
   }
 
-  const noValidClearings = !placementComplete && validClearings.length === 0
+  // ── Forest placement ─────────────────────────────────────────────────────
+
+  const validForestIndexes: number[] =
+    isForestPlacement && !placementComplete ? mapData.forestCoords.map((_, i) => i) : []
+
+  const handleForestClick = (zoneIndex: number) => {
+    if (placementComplete) return
+    dispatch(
+      placeHireling({
+        clearingIndexes: [...currentSelections, zoneIndex],
+        code: selectedHireling.code,
+      }),
+    )
+  }
+
+  // ── Path placement ───────────────────────────────────────────────────────
+
+  const validPathIndexes: number[] =
+    isPathPlacement && !placementComplete
+      ? mapData.pathCoords.map((_, i) => i).filter(i => !currentSelections.includes(i))
+      : []
+
+  const handlePathClick = (zoneIndex: number) => {
+    if (placementComplete) return
+    if (currentSelections.includes(zoneIndex)) return
+    dispatch(
+      placeHireling({
+        clearingIndexes: [...currentSelections, zoneIndex],
+        code: selectedHireling.code,
+      }),
+    )
+  }
+
+  const noValidClearings =
+    !placementComplete &&
+    !isAutoPlacement &&
+    !isForestPlacement &&
+    !isPathPlacement &&
+    validClearings.length === 0
+
   const sharedSetupProps = {
     i18nKey: `hireling.${selectedHireling.code}.setup` as const,
     tOptions: {
@@ -162,7 +198,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     },
   }
 
-  // --- Auto-placement (allClearings / allRuins): reference map, no interaction ---
+  // ── Auto-placement: reference map, placements recorded automatically ─────
   if (isAutoPlacement) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
@@ -176,40 +212,66 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     )
   }
 
-  // --- Forest placement: reference map, no clearing interaction ---
+  // ── Forest placement ─────────────────────────────────────────────────────
   if (isForestPlacement) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
-        <MapChart useHouserules={useHouserules} />
+        <MapChart
+          onForestClick={placementComplete ? undefined : handleForestClick}
+          validForestIndexes={validForestIndexes}
+          selectedForestIndexes={currentSelections}
+          useHouserules={useHouserules}
+        />
         <div>
-          <p>
-            <LocaleText {...sharedSetupProps} />
-          </p>
+          {placementComplete ? (
+            <p>
+              <LocaleText
+                i18nKey="label.placementComplete"
+                tOptions={{ count: placementCount }}
+              />
+            </p>
+          ) : (
+            <p>
+              <LocaleText {...sharedSetupProps} />
+            </p>
+          )}
         </div>
       </Section>
     )
   }
 
-  // --- Path placement: reference map, no clearing interaction ---
+  // ── Path placement ───────────────────────────────────────────────────────
   if (isPathPlacement) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
-        <MapChart useHouserules={useHouserules} />
+        <MapChart
+          onPathClick={placementComplete ? undefined : handlePathClick}
+          validPathIndexes={validPathIndexes}
+          selectedPathIndexes={currentSelections}
+          useHouserules={useHouserules}
+        />
         <div>
-          <p>
-            <LocaleText {...sharedSetupProps} />
-          </p>
+          {placementComplete ? (
+            <p>
+              <LocaleText
+                i18nKey="label.placementComplete"
+                tOptions={{ count: placementCount }}
+              />
+            </p>
+          ) : (
+            <p>
+              <LocaleText {...sharedSetupProps} />
+            </p>
+          )}
         </div>
       </Section>
     )
   }
 
-  // --- Standard clearing-based placement ---
+  // ── Standard clearing-based placement ────────────────────────────────────
   return (
     <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
       <MapChart
-        // Once all placements are done, remove the click handler entirely so the
-        // map renders as reference-only and the cursor reflects non-interactivity.
         onClearingClick={placementComplete ? undefined : handleClearingClick}
         useHouserules={useHouserules}
         validClearings={validClearings}

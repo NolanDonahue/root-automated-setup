@@ -70,7 +70,10 @@ export const selectSetupDeck = createSelector(
   (deckCode, deckArray) => deckArray.find(({ code }) => code === deckCode),
 )
 
-/** Returns the object for the map selected in setup. */
+/**
+ * Returns the hydrated map object for the map selected in setup, including resolved clearings,
+ * landmark data, and the path/forest coordinate arrays needed for hireling placement rendering.
+ */
 export const selectSetupMap = createSelector(
   selectSetupMapCode,
   selectSetupClearings,
@@ -78,7 +81,6 @@ export const selectSetupMap = createSelector(
   selectLandmarkArray,
   (mapCode, setupClearings, mapArray, landmarkArray) => {
     const setupMap = mapArray.find(({ code }) => code === mapCode)
-    // Inject the landmark data too
     return (
       setupMap && {
         ...setupMap,
@@ -92,12 +94,12 @@ export const selectSetupMap = createSelector(
               : undefined,
           }
         }),
-        paths: setupMap.paths,
-        forests: setupMap.forestCoords ?? [],
         landmark: setupMap.landmark && {
           ...landmarkArray.find(({ code }) => code === setupMap.landmark!.code)!,
           ...setupMap.landmark,
         },
+        pathCoords: setupMap.pathCoords ?? [],
+        forestCoords: setupMap.forestCoords ?? [],
       }
     )
   },

@@ -19,7 +19,7 @@ export const setUpMap: SetupStepDefinition = {
       const landmarkCode = //Pulls the code for the mountain or lake map landmark
         isMountain && useHouserules ? mountainLandmarkCode : setupMap.landmark.code
       const landmarkIndex = //Reference the clearing index of the mountain/lake map
-        isMountain ? 4 : 11
+        isMountain ? 5 : 11
 
       dispatch(
         placeLandmark({

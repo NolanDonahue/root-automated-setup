@@ -199,7 +199,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   }
 
   // ── Auto-placement: reference map, placements recorded automatically ─────
-  if (isAutoPlacement) {
+  if (isAutoPlacement && !selectedHireling.demoted) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
         <MapChart useHouserules={useHouserules} />
@@ -213,7 +213,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   }
 
   // ── Forest placement ─────────────────────────────────────────────────────
-  if (isForestPlacement) {
+  if (isForestPlacement && !selectedHireling.demoted) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
         <MapChart
@@ -241,7 +241,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   }
 
   // ── Path placement ───────────────────────────────────────────────────────
-  if (isPathPlacement) {
+  if (isPathPlacement && !selectedHireling.demoted) {
     return (
       <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
         <MapChart
@@ -269,42 +269,37 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   }
 
   // ── Standard clearing-based placement ────────────────────────────────────
-  return (
-    <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
-      <MapChart
-        onClearingClick={placementComplete ? undefined : handleClearingClick}
-        useHouserules={useHouserules}
-        validClearings={validClearings}
-        selectedClearings={currentSelections}
-      />
-      <div>
-        {randomRolledSuit && (
-          <p>
-            <LocaleText
-              i18nKey="label.rolledSuit"
-              tOptions={{ context: randomRolledSuit }}
-            />
-          </p>
-        )}
-        {placementComplete ? (
-          <p>
-            <LocaleText
-              i18nKey="label.placementComplete"
-              tOptions={{ count: placementCount }}
-            />
-          </p>
-        ) : noValidClearings ? (
-          <p>
-            <LocaleText i18nKey="error.noValidClearings" />
-          </p>
-        ) : (
-          <p>
-            <LocaleText {...sharedSetupProps} />
-          </p>
-        )}
-      </div>
-    </Section>
-  )
+  if (!selectedHireling.demoted) {
+    return (
+      <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
+        <MapChart
+          onClearingClick={placementComplete ? undefined : handleClearingClick}
+          useHouserules={useHouserules}
+          validClearings={validClearings}
+          selectedClearings={currentSelections}
+        />
+        <div>
+          {noValidClearings ? (
+            <p>
+              <LocaleText i18nKey="error.noValidClearings" />
+            </p>
+          ) : (
+            <p>
+              <LocaleText {...sharedSetupProps} />
+            </p>
+          )}
+        </div>
+      </Section>
+    )
+  } else {
+    return (
+      <Section subtitleKey={`hireling.${selectedHireling.code}.setupTitle`}>
+        <p>
+          <LocaleText {...sharedSetupProps} />
+        </p>
+      </Section>
+    )
+  }
 }
 
 export default SetUpHirelingStep

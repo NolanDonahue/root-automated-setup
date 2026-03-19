@@ -509,10 +509,10 @@ const MapChart: React.FC<MapChartProps> = ({
 
             {/*
       ============================================================
-      DEV TOOLS — uncomment the blocks you need, recomment when done
+      DEV TOOLS — uncomment the blocks you need, re-comment when done
       ============================================================*/}
 
-            {/*// ── GRID OVERLAY: 100px grid with axis labels ────────────────────────*/}
+            {/*
             {Array.from({ length: 11 }).map((_, i) => (
               <g
                 key={`grid-${i}`}
@@ -523,7 +523,7 @@ const MapChart: React.FC<MapChartProps> = ({
                   y1={i * 100}
                   x2={1000}
                   y2={i * 100}
-                  stroke="rgba(255,255,255,0.4)"
+                  stroke="rgba(0, 0, 0, 0.4)"
                   strokeWidth="2"
                 />
                 <line
@@ -531,13 +531,13 @@ const MapChart: React.FC<MapChartProps> = ({
                   y1={0}
                   x2={i * 100}
                   y2={1000}
-                  stroke="rgba(255,255,255,0.4)"
+                  stroke="rgba(0, 0, 0, 0.4)"
                   strokeWidth="2"
                 />
                 <text
                   x={i * 100 + 5}
                   y={20}
-                  fill="yellow"
+                  fill="red"
                   fontSize="16"
                   fontWeight="bold"
                 >
@@ -546,7 +546,7 @@ const MapChart: React.FC<MapChartProps> = ({
                 <text
                   x={5}
                   y={i * 100 - 5}
-                  fill="yellow"
+                  fill="red"
                   fontSize="16"
                   fontWeight="bold"
                 >
@@ -554,8 +554,6 @@ const MapChart: React.FC<MapChartProps> = ({
                 </text>
               </g>
             ))}
-
-            {/*// ── CLEARING LABELS: index, x, y for each clearing ───────────────────*/}
             {map.clearings.map(({ x, y }, i) => (
               <text
                 key={`clabel-${i}`}
@@ -563,7 +561,7 @@ const MapChart: React.FC<MapChartProps> = ({
                 y={y + 5}
                 fontSize="24"
                 fontWeight="900"
-                fill="cyan"
+                fill="red"
                 stroke="black"
                 strokeWidth="1.5"
                 textAnchor="middle"
@@ -572,8 +570,6 @@ const MapChart: React.FC<MapChartProps> = ({
                 [{i}] {x},{y}
               </text>
             ))}
-
-            {/*// ── PATH COORD MARKERS: X at each pathCoords entry ───────────────────*/}
             {map.pathCoords.map(([x, y], i) => (
               <g
                 key={`pmark-${i}`}
@@ -584,7 +580,7 @@ const MapChart: React.FC<MapChartProps> = ({
                   y1={y - 12}
                   x2={x + 12}
                   y2={y + 12}
-                  stroke="#f97316"
+                  stroke="#f91616"
                   strokeWidth="4"
                   strokeLinecap="round"
                 />
@@ -593,7 +589,7 @@ const MapChart: React.FC<MapChartProps> = ({
                   y1={y - 12}
                   x2={x - 12}
                   y2={y + 12}
-                  stroke="#f97316"
+                  stroke="#f91616"
                   strokeWidth="4"
                   strokeLinecap="round"
                 />
@@ -602,7 +598,7 @@ const MapChart: React.FC<MapChartProps> = ({
                   y={y - 16}
                   fontSize="16"
                   fontWeight="bold"
-                  fill="#f97316"
+                  fill="#f91616"
                   stroke="black"
                   strokeWidth="1"
                   textAnchor="middle"
@@ -611,8 +607,6 @@ const MapChart: React.FC<MapChartProps> = ({
                 </text>
               </g>
             ))}
-
-            {/*// ── FOREST COORD MARKERS: X at each forestCoords entry ───────────────*/}
             {map.forestCoords.map(([x, y], i) => (
               <g
                 key={`fmark-${i}`}
@@ -651,7 +645,7 @@ const MapChart: React.FC<MapChartProps> = ({
               </g>
             ))}
 
-            {/*============================================================ */}
+            {/*================================END DEV TOOLS============================ */}
           </g>
         )
       })}

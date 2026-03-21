@@ -8,6 +8,7 @@ import Checkbox from '../../components/checkbox'
 import LocaleText from '../../components/localeText'
 import MapChart from '../../components/mapChart'
 import Section from '../../components/section'
+import { rollSuits } from '../../functions/random'
 import { validateHirelingPlacement } from '../../functions/validation'
 import { useAppDispatch, useAppSelector, usePlayerNumber } from '../../hooks'
 import {
@@ -17,9 +18,6 @@ import {
   selectSetupMap,
   setCurrentIndex,
 } from '../../store'
-
-const ROLLABLE_SUITS = ['fox', 'mouse', 'rabbit'] as const
-const rolledSuit = ROLLABLE_SUITS[Math.floor(Math.random() * ROLLABLE_SUITS.length)]
 
 const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   const mapData = useAppSelector(selectSetupMap)
@@ -61,10 +59,11 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
 
   const placementComplete = currentSelections.length >= placementCount
 
-  const randomRolledSuit = useMemo(() => {
+  const randomRolledSuits = useMemo(() => {
     if (!hirelingDef?.placementRules?.includes('randomSuit')) return undefined
-    return rolledSuit
-  }, [hirelingDef?.placementRules])
+    return rollSuits({ withoutReplace: false, numRolls: 2, includeBird: false })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Key to hireling + step for stable rolls; reroll when navigating
+  }, [hirelingDef?.placementRules, selectedHireling?.code, flowSlice.step])
 
   // Auto-dispatch for allClearings / allRuins — no user interaction required.
   useEffect(() => {
@@ -86,6 +85,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
           hirelingDef,
           [],
           mapData as unknown as SetupMapState,
+          randomRolledSuits,
         )
       ) {
         autoIndexes.push(i)
@@ -101,6 +101,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     isAutoPlacement,
     mapData,
     placedHirelings,
+    randomRolledSuits,
     selectedHireling,
     selectedHireling?.code,
     setupState.clearings,
@@ -131,7 +132,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
         hirelingDef,
         currentSelections,
         mapData as unknown as SetupMapState,
-        randomRolledSuit,
+        randomRolledSuits,
       )
       const passesCustomRules = hirelingDef.isValidPlacement
         ? hirelingDef.isValidPlacement(

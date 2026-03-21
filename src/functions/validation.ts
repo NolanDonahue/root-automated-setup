@@ -8,7 +8,7 @@ import type { ClearingSuit, Hireling, Landmark, SetupClearing, SetupMapState } f
  * @param hireling The hireling definition containing placement rules.
  * @param currentSelections Indexes of clearings already selected for this hireling this step.
  * @param mapData The hydrated map state, required for matchFirstSuit suit lookup.
- * @param randomRolledSuit The suit randomly rolled for a randomSuit hireling, if applicable.
+ * @param randomRolledSuits Array of suits rolled for a randomSuit hireling; the Nth selection must match randomRolledSuits[N].
  */
 export const validateHirelingPlacement = (
   clearingIndex: number,
@@ -16,7 +16,7 @@ export const validateHirelingPlacement = (
   hireling: Hireling,
   currentSelections: number[],
   mapData?: SetupMapState,
-  randomRolledSuit?: string,
+  randomRolledSuits?: string[],
 ): boolean => {
   if (!hireling.allowSameClearing && currentSelections.includes(clearingIndex)) {
     return false
@@ -81,9 +81,16 @@ export const validateHirelingPlacement = (
         break
       }
 
-      case 'randomSuit':
-        if (clearingData.suit !== randomRolledSuit) return false
+      case 'randomSuit': {
+        const suitIndex = currentSelections.length
+        if (
+          !randomRolledSuits ||
+          suitIndex >= randomRolledSuits.length ||
+          clearingData.suit !== randomRolledSuits[suitIndex]
+        )
+          return false
         break
+      }
     }
   }
 

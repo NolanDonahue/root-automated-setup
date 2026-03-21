@@ -17,6 +17,48 @@ export const shuffleList = (list: unknown[]) => {
   }
 }
 
+export interface RollSuitsOptions {
+  /** Draw without replacement — each suit can appear at most once per roll set. */
+  withoutReplace?: boolean
+  /** Number of suit strings to generate. */
+  numRolls?: number
+  /** Include 'bird' as a fourth suit option in the pool. */
+  includeBird?: boolean
+  includeFrog?: boolean
+}
+
+const BASE_SUITS = ['fox', 'mouse', 'rabbit'] as const
+
+/**
+ * Generates an array of randomly rolled suits for hireling placement rules (e.g. randomSuit).
+ * Reroll for each step by calling with fresh params; callers should use useMemo keyed to
+ * the current hireling/step to ensure consistent rolls within a step.
+ *
+ * @param options Configuration for the roll behavior.
+ * @returns Array of suit strings, length = numRolls.
+ */
+export const rollSuits = (options: RollSuitsOptions = {}): string[] => {
+  const {
+    withoutReplace = false,
+    numRolls = 1,
+    includeBird = false,
+    includeFrog = false,
+  } = options
+
+  const pool = includeBird ? (includeFrog ? [...BASE_SUITS, 'bird', 'frog'] : [...BASE_SUITS, 'bird']) : (includeFrog ? [...BASE_SUITS, 'frog'] : [...BASE_SUITS])
+
+  if (withoutReplace) {
+    shuffleList(pool)
+    return pool.slice(0, Math.min(numRolls, pool.length)).map(s => s as string)
+  }
+
+  const result: string[] = []
+  for (let i = 0; i < numRolls; i++) {
+    result.push(pool[Math.floor(Math.random() * pool.length)] as string)
+  }
+  return result
+}
+
 /**
  * Removes a random element from a given list, and then returns it.
  *

@@ -1,5 +1,4 @@
 import type { DeepReadonly, Expansion, ExpansionCode } from './types'
-
 // Box Images
 import clockwork2Box from './images/boxes/clockwork2.png'
 import clockworkBox from './images/boxes/clockwork.png'
@@ -1153,7 +1152,7 @@ const definitions: DeepReadonly<Record<ExpansionCode, Expansion>> = {
         image: uprisingMeeple,
         excludeFactions: ['alliance'],
         placementRules: ['randomSuit'],
-        placementCount: 1,
+        placementCount: 2,
       },
       exile: {
         image: exileMeeple,

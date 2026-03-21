@@ -56,6 +56,7 @@ const SeatPlayersStep: SetupStepComponent = () => {
         onChange={value => dispatch(fixFirstPlayer(value))}
       />
 
+      // Enable all the advanced houserules to reduce the constraints on the user
       <Checkbox
         labelKey="label.useHouserules"
         defaultValue={useHouserules}

@@ -16,6 +16,7 @@ const ChooseLandmarksStep: SetupStepComponent = () => {
 
   if (!setupMap) return null
   const enabledLandmarkCount = landmarks.filter(landmark => landmark.enabled).length
+  // If houserules are enabled let users exceed the 2 landmark max
   const maxAllowed = useHouserules ? enabledLandmarkCount : MAX_LANDMARKS
 
   return (

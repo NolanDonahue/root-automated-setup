@@ -81,6 +81,7 @@ const ChooseMapStep: SetupStepComponent = () => {
             onChange={checked => dispatch(enableMapLandmark([code, checked]))}
           />
         ))}
+      // If houserules are enabled and the mountain map is chosen let players choose to use the tower to lost city landmark homerule
       {useHouserules && mountainEnabled ? (
         <Checkbox
           labelKey={`map.mountain.useHouserule`}

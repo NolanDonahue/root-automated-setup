@@ -28,7 +28,9 @@ const ChooseHirelingsStep: SetupStepComponent = () => {
         defaultValue={includeHirelings}
         onChange={checked => dispatch(setHirelingCount(checked ? HIRELING_SETUP_COUNT : 0))}
       />
-      {includeHirelings && useHouserules ? (
+      
+      //If we have houserules let user set the number of hirelings they want to use
+      {includeHirelings && useHouserules ? ( 
         <NumberSelector
           labelKey="label.hirelingCount"
           value={hirelingCount}

@@ -1,13 +1,17 @@
 import type { SetupStepComponent } from '..'
-import type { Expansion, Landmark, SetupClearing, SetupMapState } from '../../types'
+import type { SetupClearing, SetupMapState } from '../../types'
 
-import * as componentDefinitions from '../../componentDefinitions'
 import LocaleText from '../../components/localeText'
 import MapChart from '../../components/mapChart'
 import Section from '../../components/section'
 import { validateLandmarkPlacement } from '../../functions/validation'
 import { useAppDispatch, useAppSelector, usePlayerNumber } from '../../hooks'
-import { placeLandmark, selectSetupMap, selectSetupMapCode } from '../../store'
+import {
+  placeLandmark,
+  selectLandmarkByCode,
+  selectSetupMap,
+  selectSetupMapCode,
+} from '../../store'
 
 const SetUpLandmarkStep: SetupStepComponent = ({ flowSlice }) => {
   const mapCode = useAppSelector(selectSetupMapCode)
@@ -21,22 +25,9 @@ const SetUpLandmarkStep: SetupStepComponent = ({ flowSlice }) => {
   const { index, landmarkPool } = flowSlice
 
   const selectedLandmark = index != null ? landmarkPool[index] : null
+  const landmarkDef = useAppSelector(selectLandmarkByCode(selectedLandmark))
+
   if (!selectedLandmark || !mapData) return null
-
-  let landmarkDef: Landmark | null = null
-  for (const exportValue of Object.values(componentDefinitions)) {
-    if (typeof exportValue === 'object') {
-      for (const expansion of Object.values(exportValue)) {
-        const typedExpansion = expansion as Partial<Expansion>
-
-        if (typedExpansion.landmarks && selectedLandmark in typedExpansion.landmarks) {
-          landmarkDef = typedExpansion.landmarks[selectedLandmark]!
-          break
-        }
-      }
-    }
-    if (landmarkDef) break
-  }
 
   const validClearings: number[] = []
   if (landmarkDef) {

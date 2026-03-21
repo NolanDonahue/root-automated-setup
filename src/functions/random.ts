@@ -49,12 +49,12 @@ export const rollSuits = (options: RollSuitsOptions = {}): string[] => {
 
   if (withoutReplace) {
     shuffleList(pool)
-    return pool.slice(0, Math.min(numRolls, pool.length)).map(s => s as string)
+    return pool.slice(0, Math.min(numRolls, pool.length)).map(s => s)
   }
 
   const result: string[] = []
   for (let i = 0; i < numRolls; i++) {
-    result.push(pool[Math.floor(Math.random() * pool.length)] as string)
+    result.push(pool[Math.floor(Math.random() * pool.length)]!)
   }
   return result
 }

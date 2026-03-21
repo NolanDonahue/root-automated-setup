@@ -1,9 +1,8 @@
 import { useEffect, useMemo } from 'react'
 
 import type { SetupStepComponent } from '..'
-import type { Expansion, Hireling, SetupClearing, SetupMapState } from '../../types'
+import type { SetupClearing, SetupMapState } from '../../types'
 
-import * as componentDefinitions from '../../componentDefinitions'
 import Checkbox from '../../components/checkbox'
 import LocaleText from '../../components/localeText'
 import MapChart from '../../components/mapChart'
@@ -12,11 +11,10 @@ import { rollSuits } from '../../functions/random'
 import { validateHirelingPlacement } from '../../functions/validation'
 import { useAppDispatch, useAppSelector, usePlayerNumber } from '../../hooks'
 import {
-  addToHirelingPool,
   placeHireling,
-  removeCurrentHirelingFromPool,
+  selectHirelingByCode,
   selectSetupMap,
-  setCurrentIndex,
+  toggleCurrentHirelingDemoted,
 } from '../../store'
 
 const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
@@ -30,21 +28,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   const { index, hirelingPool } = flowSlice
   const selectedHireling = index != null ? hirelingPool[index] : null
 
-  let hirelingDef: Hireling | null = null
-  if (selectedHireling) {
-    for (const exportValue of Object.values(componentDefinitions)) {
-      if (typeof exportValue === 'object') {
-        for (const expansion of Object.values(exportValue)) {
-          const typedExpansion = expansion as Partial<Expansion>
-          if (typedExpansion.hirelings && selectedHireling.code in typedExpansion.hirelings) {
-            hirelingDef = typedExpansion.hirelings[selectedHireling.code] ?? null
-            break
-          }
-        }
-      }
-      if (hirelingDef) break
-    }
-  }
+  const hirelingDef = useAppSelector(selectHirelingByCode(selectedHireling?.code))
 
   const rules = hirelingDef?.placementRules ?? []
   const placementCount = hirelingDef?.placementCount ?? 1
@@ -62,7 +46,6 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   const randomRolledSuits = useMemo(() => {
     if (!hirelingDef?.placementRules?.includes('randomSuit')) return undefined
     return rollSuits({ withoutReplace: false, numRolls: 2, includeBird: false })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Key to hireling + step for stable rolls; reroll when navigating
   }, [hirelingDef?.placementRules, selectedHireling?.code, flowSlice.step])
 
   // Auto-dispatch for allClearings / allRuins — no user interaction required.
@@ -206,19 +189,12 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     },
   }
 
-  // ── Demote / promote toggle
-  const demotePromoteHireling = (code: string, demoted: boolean) => {
-    dispatch(removeCurrentHirelingFromPool())
-    dispatch(addToHirelingPool(code, !demoted))
-    dispatch(setCurrentIndex(hirelingPool.length - 1))
-  }
-
   const demotePromoteCheckbox = (
     <Checkbox
       labelKey={selectedHireling.demoted ? 'label.askPromoteHireling' : 'label.askDemoteHireling'}
       defaultValue={selectedHireling.demoted}
       onChange={() => {
-        demotePromoteHireling(selectedHireling.code, selectedHireling.demoted)
+        dispatch(toggleCurrentHirelingDemoted(selectedHireling.code, selectedHireling.demoted))
       }}
     />
   )

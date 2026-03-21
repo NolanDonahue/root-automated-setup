@@ -1,4 +1,5 @@
 import type { DeepReadonly, Expansion, ExpansionCode } from './types'
+
 // Box Images
 import clockwork2Box from './images/boxes/clockwork2.png'
 import clockworkBox from './images/boxes/clockwork.png'
@@ -900,7 +901,7 @@ const definitions: DeepReadonly<Record<ExpansionCode, Expansion>> = {
           {
             x: 588,
             y: 145,
-            adjacentClearings: [2, 4],
+            adjacentClearings: [2, 4, 5],
             mapEdge: true,
             buildingSlots: 1,
             suit: 'mouse',

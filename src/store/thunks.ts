@@ -1,6 +1,6 @@
 import type { UnknownAction } from '@reduxjs/toolkit'
 
-import type { Togglable, WithCode } from '../types'
+import type { HirelingCode, Togglable, WithCode } from '../types'
 
 import { HIRELING_SETUP_COUNT } from '../constants'
 import {
@@ -11,7 +11,12 @@ import {
   toggleExpansion,
   toggleFaction,
 } from '../store'
-import { setCurrentPlayerIndex } from './slices/flow'
+import {
+  addToHirelingPool,
+  removeCurrentHirelingFromPool,
+  setCurrentIndex,
+  setCurrentPlayerIndex,
+} from './slices/flow'
 import {
   balanceMapSuits,
   fixFirstPlayer,
@@ -94,6 +99,18 @@ export const goBackInPlayerTurnOrder = (): AppThunk => (dispatch, getState) => {
   }
   dispatch(setCurrentPlayerIndex(newPlayerIndex))
 }
+
+/**
+ * Removes the current hireling from the pool, re-adds the same code with flipped demoted flag, and
+ * selects the new entry using post-update state from getState() after addToHirelingPool.
+ */
+export const toggleCurrentHirelingDemoted =
+  (code: HirelingCode, currentlyDemoted: boolean): AppThunk =>
+  (dispatch, getState) => {
+    dispatch(removeCurrentHirelingFromPool())
+    dispatch(addToHirelingPool(code, !currentlyDemoted))
+    dispatch(setCurrentIndex(getState().flow.hirelingPool.length - 1))
+  }
 
 /**
  * Thunk action for pulling URL params Example URL:

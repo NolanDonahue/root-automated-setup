@@ -411,6 +411,7 @@ export interface FlowSlice {
   selectedBots: BotCode[]
   step: SetupStep
   vagabondSetUp: boolean
+  useDraft: boolean
   placedLandmarks: Record<string, number[]>
   placedHirelings: Record<string, number[]>
 }

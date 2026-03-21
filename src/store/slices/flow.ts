@@ -59,6 +59,7 @@ const getSlice = (flowState: FlowState): FlowSlice => ({
   step: flowState.currentStep,
   vagabondSetUp: flowState.vagabondSetUp,
   selectedBots: [...flowState.selectedBots],
+  useDraft: flowState.useDraft,
   ruinPlacer: flowState.ruinPlacer,
   placedLandmarks: { ...flowState.placedLandmarks },
   placedHirelings: { ...flowState.placedHirelings },
@@ -80,7 +81,7 @@ const applySlice = (state: FlowState, slice: FlowSlice) => {
   state.placedHirelings = slice.placedHirelings
 }
 
-const initialState: FlowState = {
+const getInitialState = (): FlowState => ({
   botPool: [],
   factionPool: [],
   hirelingPool: [],
@@ -98,7 +99,9 @@ const initialState: FlowState = {
   placedHirelings: {},
   ruinPlacer: null,
   mountainLandmarkCode: 'tower',
-}
+})
+
+const initialState = getInitialState()
 
 export const flowSlice = createSlice({
   name: 'flow',
@@ -151,11 +154,6 @@ export const flowSlice = createSlice({
           `Invalid redoStep action: futureSteps array returned empty value (${nextStep})`,
         )
       }
-    },
-
-    resetStep() {
-      // Reset to initial state
-      return initialState
     },
 
     setUseDraft(state, { payload: useDraft }: PayloadAction<boolean>) {
@@ -296,7 +294,8 @@ export const flowSlice = createSlice({
         ) {
           state.ruinPlacer = removedFaction.code
         }
-      } else {
+      } 
+      else {
         console.warn(`Invalid removeCurrentFactionFromPool action: currentIndex must not be null`)
       }
     },
@@ -340,7 +339,7 @@ export const flowSlice = createSlice({
       })
       // Clear internal variables when restarting setup
       .addCase(resetState, () => {
-        return initialState
+        return getInitialState()
       })
       .addDefaultCase(state => {
         state.futureSteps = []
@@ -351,6 +350,7 @@ export const flowSlice = createSlice({
     selectBotPool: state => state.botPool,
     selectFlowSlice: createStructuredSelector.withTypes<FlowState>()({
       botPool: state => state.botPool,
+      useDraft: state => state.useDraft,
       factionPool: state => state.factionPool,
       hirelingPool: state => state.hirelingPool,
       index: state => state.currentIndex,
@@ -388,7 +388,6 @@ export const {
   setLandmarkPool,
   setUseDraft,
   undoStep,
-  resetStep,
   placeLandmark,
   placeHireling,
 } = flowSlice.actions

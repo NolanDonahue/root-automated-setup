@@ -14,8 +14,8 @@ import {
   placeHireling,
   selectHirelingByCode,
   selectSetupMap,
-  toggleCurrentHirelingDemoted,
 } from '../../store'
+import { toggleCurrentHirelingDemoted } from '../../store'
 
 const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   const mapData = useAppSelector(selectSetupMap)
@@ -46,7 +46,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
   const randomRolledSuits = useMemo(() => {
     if (!hirelingDef?.placementRules?.includes('randomSuit')) return undefined
     return rollSuits({ withoutReplace: false, numRolls: 2, includeBird: false })
-  }, [hirelingDef?.placementRules, selectedHireling?.code, flowSlice.step])
+  }, [hirelingDef?.placementRules])
 
   // Auto-dispatch for allClearings / allRuins — no user interaction required.
   useEffect(() => {

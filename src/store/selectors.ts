@@ -1,7 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit'
 
 import type { RootState } from '.'
-import type { FlowSlice } from '../types'
+import type { FlowSlice, HirelingCode, LandmarkCode } from '../types'
 
 import {
   selectCaptainArray,
@@ -35,6 +35,26 @@ export const selectFactionPoolFull = currySelector(
             )
           : [],
       })),
+  ),
+)
+
+/** Hireling definition by code (from enabled components + definitions). */
+export const selectHirelingByCode = currySelector(
+  createSelector(
+    selectHirelingArray,
+    (_state: RootState, code: HirelingCode | null | undefined) => code,
+    (hirelingArray, code) =>
+      code ? (hirelingArray.find(h => h.code === code) ?? null) : null,
+  ),
+)
+
+/** Landmark definition by code. */
+export const selectLandmarkByCode = currySelector(
+  createSelector(
+    selectLandmarkArray,
+    (_state: RootState, code: LandmarkCode | null | undefined) => code,
+    (landmarkArray, code) =>
+      code ? (landmarkArray.find(l => l.code === code) ?? null) : null,
   ),
 )
 

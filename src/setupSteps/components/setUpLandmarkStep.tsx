@@ -31,16 +31,10 @@ const SetUpLandmarkStep: SetupStepComponent = ({ flowSlice }) => {
 
   const validClearings: number[] = []
   if (landmarkDef) {
-    mapData.clearings.forEach((baseClearing, i) => {
-      const dynamicClearingState = setupState.clearings[i] ?? {}
-      const mergedClearing = {
-        ...baseClearing,
-        ...dynamicClearingState,
-      } as unknown as SetupClearing
-
+    mapData.clearings.forEach((clearing, i) => {
       const passesTagRules = validateLandmarkPlacement(
         i,
-        mergedClearing,
+        clearing as SetupClearing,
         placedLandmarks,
         landmarkDef,
       )
@@ -48,7 +42,7 @@ const SetUpLandmarkStep: SetupStepComponent = ({ flowSlice }) => {
       const passesCustomRules = landmarkDef.isValidPlacement
         ? landmarkDef.isValidPlacement(
             i,
-            mergedClearing,
+            clearing as SetupClearing,
             mapData as unknown as SetupMapState,
             setupState,
           )
@@ -72,8 +66,9 @@ const SetUpLandmarkStep: SetupStepComponent = ({ flowSlice }) => {
   return (
     <Section subtitleKey={`landmark.${selectedLandmark}.setupTitle`}>
       <MapChart
-        onClearingClick={handleClearingClick}
         activeLandmark={selectedLandmark}
+        mapAnchoredLandmarkMode="placement"
+        onClearingClick={handleClearingClick}
         useHouserules={useHouserules}
         validClearings={validClearings}
       />

@@ -124,3 +124,13 @@ export const selectSetupMap = createSelector(
     )
   },
 )
+
+/**
+ * Map clearings with base map data merged with setup-time overlay (same as
+ * `selectSetupMap(state)?.clearings`). Use this instead of re-merging with `setup.clearings` in
+ * components.
+ */
+export const selectSetupMapClearings = createSelector(
+  selectSetupMap,
+  setupMap => setupMap?.clearings ?? [],
+)

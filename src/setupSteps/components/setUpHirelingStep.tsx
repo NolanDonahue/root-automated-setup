@@ -54,17 +54,11 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     if ((placedHirelings[selectedHireling.code]?.length ?? 0) > 0) return
 
     const autoIndexes: number[] = []
-    mapData.clearings.forEach((baseClearing, i) => {
-      const dynamicClearingState = setupState.clearings[i] ?? {}
-      const mergedClearing = {
-        ...baseClearing,
-        ...dynamicClearingState,
-      } as unknown as SetupClearing
-
+    mapData.clearings.forEach((clearing, i) => {
       if (
         validateHirelingPlacement(
           i,
-          mergedClearing,
+          clearing as SetupClearing,
           hirelingDef,
           [],
           mapData as unknown as SetupMapState,
@@ -87,7 +81,6 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     randomRolledSuits,
     selectedHireling,
     selectedHireling?.code,
-    setupState.clearings,
   ])
 
   if (!selectedHireling || !mapData) return null
@@ -102,16 +95,10 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
     !isPathPlacement &&
     !placementComplete
   ) {
-    mapData.clearings.forEach((baseClearing, i) => {
-      const dynamicClearingState = setupState.clearings[i] ?? {}
-      const mergedClearing = {
-        ...baseClearing,
-        ...dynamicClearingState,
-      } as unknown as SetupClearing
-
+    mapData.clearings.forEach((clearing, i) => {
       const passesTagRules = validateHirelingPlacement(
         i,
-        mergedClearing,
+        clearing as SetupClearing,
         hirelingDef,
         currentSelections,
         mapData as unknown as SetupMapState,
@@ -120,7 +107,7 @@ const SetUpHirelingStep: SetupStepComponent = ({ flowSlice }) => {
       const passesCustomRules = hirelingDef.isValidPlacement
         ? hirelingDef.isValidPlacement(
             i,
-            mergedClearing,
+            clearing as SetupClearing,
             mapData as unknown as SetupMapState,
             setupState,
           )

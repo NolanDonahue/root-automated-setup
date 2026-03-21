@@ -57,7 +57,10 @@ const SetUpMapStep: SetupStepComponent = () => {
         )}
         <LocaleText i18nKey="setupStep.setUpMap.body" />
       </ol>
-      <MapChart useHouserules={useHouserules} />
+      <MapChart
+        mapAnchoredLandmarkMode="overview"
+        useHouserules={useHouserules}
+      />
     </Section>
   )
 }

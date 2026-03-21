@@ -1,5 +1,7 @@
 import React from 'react'
 
+import type { Hireling, Landmark, WithCode } from '../types'
+
 import { ICON_DICTIONARY } from '../constants'
 import { useAppSelector } from '../hooks'
 import priorityToken from '../images/charts/markers/priority.svg'
@@ -33,6 +35,9 @@ interface MapData {
   forestCoords: [number, number][]
 }
 
+/** How to draw the map’s built-in landmark (Lake ferry, Mountain tower/city). */
+export type MapAnchoredLandmarkMode = 'overview' | 'placement'
+
 interface MapChartProps {
   onClearingClick?: (index: number) => void
   activeLandmark?: string
@@ -45,8 +50,175 @@ interface MapChartProps {
   selectedPathIndexes?: number[]
   onPathClick?: (index: number) => void
   useHouserules?: boolean
+  /**
+   * `overview` (set up map step): landmark at authored SVG coordinates.
+   * `placement` (hireling / landmark steps): same landmark only in the bottom-left stack at its
+   * clearing to avoid duplicating the large positioned graphic.
+   */
+  mapAnchoredLandmarkMode?: MapAnchoredLandmarkMode
 }
+
 const ZONE_RADIUS = 50
+
+const ZONE_STYLES = {
+  forest: {
+    titleKey: 'label.forest' as const,
+    selectedStroke: '#22c55e',
+    validFill: 'rgba(34,197,94,0.15)',
+    validStroke: '#22c55e',
+    keyPrefix: 'forest',
+    pieceKeyPrefix: 'forest-hireling',
+  },
+  path: {
+    titleKey: 'label.path' as const,
+    selectedStroke: '#f97316',
+    validFill: 'rgba(251,191,36,0.15)',
+    validStroke: '#fbbf24',
+    keyPrefix: 'path',
+    pieceKeyPrefix: 'path-hireling',
+  },
+} as const
+
+function PlacementZoneGroups({
+  zoneKind,
+  coords,
+  selectedIndexes,
+  validIndexes,
+  onZoneClick,
+  piecesByZone,
+  useHouserules,
+}: {
+  zoneKind: keyof typeof ZONE_STYLES
+  coords: [number, number][]
+  selectedIndexes: number[]
+  validIndexes: number[]
+  onZoneClick: ((index: number) => void) | undefined
+  piecesByZone: Record<number, WithCode<Hireling>[]>
+  useHouserules: boolean
+}) {
+  const style = ZONE_STYLES[zoneKind]
+
+  return coords.map(([x, y], index) => {
+    const isSelected = selectedIndexes.includes(index)
+    const isValid = validIndexes.includes(index)
+    const isClickable = onZoneClick != null && !isSelected && (isValid || useHouserules)
+    const zonePieces = piecesByZone[index] ?? []
+
+    return (
+      <g
+        key={`${style.keyPrefix}-${index}`}
+        onClick={() => {
+          if (isClickable) onZoneClick(index)
+        }}
+        style={{ cursor: isSelected ? 'default' : isClickable ? 'pointer' : 'default' }}
+      >
+        <title>
+          <LocaleText i18nKey={style.titleKey} />
+        </title>
+
+        <circle
+          cx={x}
+          cy={y}
+          r={ZONE_RADIUS}
+          fill="transparent"
+        />
+
+        {isSelected ? (
+          <circle
+            cx={x}
+            cy={y}
+            r={ZONE_RADIUS + 5}
+            fill="none"
+            stroke={style.selectedStroke}
+            strokeWidth="6"
+          />
+        ) : null}
+
+        {isValid && !isSelected ? (
+          <circle
+            cx={x}
+            cy={y}
+            r={ZONE_RADIUS + 5}
+            fill={style.validFill}
+            stroke={style.validStroke}
+            strokeWidth="4"
+            strokeDasharray="8 4"
+          />
+        ) : null}
+
+        {zonePieces.map((hireling, i) => {
+          const size = 60
+          return (
+            <image
+              key={`${style.pieceKeyPrefix}-${hireling.code}-${i}`}
+              x={x - size / 2 + i * 18}
+              y={y - size / 2 + i * 18}
+              width={size}
+              height={size}
+              href={hireling.image}
+            >
+              <title>
+                <LocaleText i18nKey={`hireling.${hireling.code}.name`} />
+              </title>
+            </image>
+          )
+        })}
+      </g>
+    )
+  })
+}
+
+function LandmarkQuadrantStack({
+  clearingX,
+  clearingY,
+  landmarks,
+}: {
+  clearingX: number
+  clearingY: number
+  landmarks: WithCode<Landmark>[]
+}) {
+  const size = 75
+  return landmarks.map((landmark, i) => (
+    <image
+      key={`landmark-${landmark.code}-${i}`}
+      x={clearingX - size + 5 - i * 12}
+      y={clearingY + 5 + i * 12}
+      width={size}
+      height={size}
+      href={landmark.image}
+    >
+      <title>
+        <LocaleText i18nKey={`landmark.${landmark.code}.name`} />
+      </title>
+    </image>
+  ))
+}
+
+function HirelingQuadrantStack({
+  clearingX,
+  clearingY,
+  hirelings: hirelingList,
+}: {
+  clearingX: number
+  clearingY: number
+  hirelings: WithCode<Hireling>[]
+}) {
+  const size = 75
+  return hirelingList.map((hireling, i) => (
+    <image
+      key={`hireling-${hireling.code}-${i}`}
+      x={clearingX - 5 + i * 22}
+      y={clearingY + 5 + i * 22}
+      width={size}
+      height={size}
+      href={hireling.image}
+    >
+      <title>
+        <LocaleText i18nKey={`hireling.${hireling.code}.name`} />
+      </title>
+    </image>
+  ))
+}
 
 const MapChart: React.FC<MapChartProps> = ({
   onClearingClick,
@@ -59,6 +231,7 @@ const MapChart: React.FC<MapChartProps> = ({
   selectedPathIndexes = [],
   onPathClick,
   useHouserules = false,
+  mapAnchoredLandmarkMode = 'placement',
 }) => {
   const map = useAppSelector(selectSetupMap) as MapData | null
 
@@ -68,6 +241,27 @@ const MapChart: React.FC<MapChartProps> = ({
   const landmarks = useAppSelector(selectLandmarkArray)
   const hirelings = useAppSelector(selectHirelingArray)
   const mountainLandmarkCode = useAppSelector(state => state.setup.mountainLandmarkCode)
+
+  const displayLandmark = React.useMemo(() => {
+    if (!map?.useLandmark || !map.landmark) return null
+    if (map.code === 'mountain') {
+      const overrideLandmark = landmarks.find(l => l.code === mountainLandmarkCode)
+      if (overrideLandmark) {
+        return {
+          ...map.landmark,
+          code: overrideLandmark.code,
+          image: overrideLandmark.image,
+        }
+      }
+    }
+    return map.landmark
+  }, [map, landmarks, mountainLandmarkCode])
+
+  const mapAnchoredLandmarkDef = React.useMemo(
+    () =>
+      displayLandmark ? (landmarks.find(l => l.code === displayLandmark.code) ?? null) : null,
+    [displayLandmark, landmarks],
+  )
 
   /**
    * Clearings → which landmark/hireling images to stack there. Forest and path hirelings are
@@ -99,7 +293,6 @@ const MapChart: React.FC<MapChartProps> = ({
       const warriorCount = def.warriorCount ?? 1
 
       if (rules.includes('forest')) {
-        // storedIndexes are forest zone indexes
         storedIndexes.forEach(idx => {
           forestGrouping[idx] ??= []
           for (let w = 0; w < warriorCount; w++) {
@@ -107,7 +300,6 @@ const MapChart: React.FC<MapChartProps> = ({
           }
         })
       } else if (rules.includes('path')) {
-        // storedIndexes are path zone indexes
         storedIndexes.forEach(idx => {
           pathGrouping[idx] ??= []
           for (let w = 0; w < warriorCount; w++) {
@@ -115,7 +307,6 @@ const MapChart: React.FC<MapChartProps> = ({
           }
         })
       } else {
-        // storedIndexes are clearing indexes
         storedIndexes.forEach(idx => {
           clearingGrouping[idx] ??= { landmarks: [], hirelings: [] }
           for (let w = 0; w < warriorCount; w++) {
@@ -135,16 +326,7 @@ const MapChart: React.FC<MapChartProps> = ({
   if (!map) return null
 
   const floodedClearings = map.clearings.filter(clearing => clearing.flooded)
-  if (map.code === 'mountain' && map.landmark) {
-    const overrideLandmark = landmarks.find(l => l.code === mountainLandmarkCode)
-    if (overrideLandmark) {
-      map.landmark = {
-        ...map.landmark,
-        code: overrideLandmark.code,
-        image: overrideLandmark.image,
-      }
-    }
-  }
+
   return (
     <svg
       className="map"
@@ -180,149 +362,26 @@ const MapChart: React.FC<MapChartProps> = ({
         </>
       ) : null}
 
-      {/* ── Forest zones ─────────────────────────────────────────────────────── */}
-      {map.forestCoords.map(([x, y], index) => {
-        const isSelected = selectedForestIndexes.includes(index)
-        const isValid = validForestIndexes.includes(index)
-        const isClickable = onForestClick != null && !isSelected && (isValid || useHouserules)
-        const zonePieces = piecesByForestZone[index] ?? []
+      <PlacementZoneGroups
+        coords={map.forestCoords}
+        onZoneClick={onForestClick}
+        piecesByZone={piecesByForestZone}
+        selectedIndexes={selectedForestIndexes}
+        useHouserules={useHouserules}
+        validIndexes={validForestIndexes}
+        zoneKind="forest"
+      />
 
-        return (
-          <g
-            key={`forest-${index}`}
-            onClick={() => {
-              if (isClickable) onForestClick(index)
-            }}
-            style={{ cursor: isSelected ? 'default' : isClickable ? 'pointer' : 'default' }}
-          >
-            <title>
-              <LocaleText i18nKey="label.forest" />
-            </title>
+      <PlacementZoneGroups
+        coords={map.pathCoords}
+        onZoneClick={onPathClick}
+        piecesByZone={piecesByPathZone}
+        selectedIndexes={selectedPathIndexes}
+        useHouserules={useHouserules}
+        validIndexes={validPathIndexes}
+        zoneKind="path"
+      />
 
-            <circle
-              cx={x}
-              cy={y}
-              r={ZONE_RADIUS}
-              fill="transparent"
-            />
-
-            {isSelected && (
-              <circle
-                cx={x}
-                cy={y}
-                r={ZONE_RADIUS + 5}
-                fill="none"
-                stroke="#22c55e"
-                strokeWidth="6"
-              />
-            )}
-
-            {isValid && !isSelected && (
-              <circle
-                cx={x}
-                cy={y}
-                r={ZONE_RADIUS + 5}
-                fill="rgba(34,197,94,0.15)"
-                stroke="#22c55e"
-                strokeWidth="4"
-                strokeDasharray="8 4"
-              />
-            )}
-
-            {/* Hirelings placed in this forest zone */}
-            {zonePieces.map((hireling, i) => {
-              const size = 60
-              return (
-                <image
-                  key={`forest-hireling-${hireling.code}-${i}`}
-                  x={x - size / 2 + i * 18}
-                  y={y - size / 2 + i * 18}
-                  width={size}
-                  height={size}
-                  href={hireling.image}
-                >
-                  <title>
-                    <LocaleText i18nKey={`hireling.${hireling.code}.name`} />
-                  </title>
-                </image>
-              )
-            })}
-          </g>
-        )
-      })}
-
-      {/* ── Path zones ───────────────────────────────────────────────────────── */}
-      {map.pathCoords.map(([x, y], index) => {
-        const isSelected = selectedPathIndexes.includes(index)
-        const isValid = validPathIndexes.includes(index)
-        const isClickable = onPathClick != null && !isSelected && (isValid || useHouserules)
-        const zonePieces = piecesByPathZone[index] ?? []
-
-        return (
-          <g
-            key={`path-${index}`}
-            onClick={() => {
-              if (isClickable) onPathClick(index)
-            }}
-            style={{ cursor: isSelected ? 'default' : isClickable ? 'pointer' : 'default' }}
-          >
-            <title>
-              <LocaleText i18nKey="label.path" />
-            </title>
-
-            <circle
-              cx={x}
-              cy={y}
-              r={ZONE_RADIUS}
-              fill="transparent"
-            />
-
-            {isSelected && (
-              <circle
-                cx={x}
-                cy={y}
-                r={ZONE_RADIUS + 5}
-                fill="none"
-                stroke="#f97316"
-                strokeWidth="6"
-              />
-            )}
-
-            {isValid && !isSelected && (
-              <circle
-                cx={x}
-                cy={y}
-                r={ZONE_RADIUS + 5}
-                fill="rgba(251,191,36,0.15)"
-                stroke="#fbbf24"
-                strokeWidth="4"
-                strokeDasharray="8 4"
-              />
-            )}
-
-            {/* Hirelings placed on this path zone */}
-            {zonePieces.map((hireling, i) => {
-              const size = 60
-              return (
-                <image
-                  key={`path-hireling-${hireling.code}-${i}`}
-                  x={x - size / 2 + i * 18}
-                  y={y - size / 2 + i * 18}
-                  width={size}
-                  height={size}
-                  href={hireling.image}
-                >
-                  <title>
-                    <LocaleText i18nKey={`hireling.${hireling.code}.name`} />
-                  </title>
-                </image>
-              )
-            })}
-          </g>
-        )
-      })}
-
-      {/* ── Clearings ────────────────────────────────────────────────────────── */}
       {map.clearings.map(({ x, y, suit, flooded, ruin }, index) => {
         const clearingPieces = piecesByClearing[index] ?? { landmarks: [], hirelings: [] }
         const suitLandmarkCode = suit ? map.suitLandmarks?.[suit] : null
@@ -338,6 +397,27 @@ const MapChart: React.FC<MapChartProps> = ({
         let cursorStyle = 'default'
         if (onClearingClick != null) {
           cursorStyle = isAlreadySelected ? 'default' : isClickable ? 'pointer' : 'not-allowed'
+        }
+
+        const overviewLandmark =
+          mapAnchoredLandmarkMode === 'overview' &&
+          map.useLandmark &&
+          displayLandmark?.clearing === index
+            ? displayLandmark
+            : null
+
+        const quadrantLandmarks = [...clearingPieces.landmarks]
+        if (
+          mapAnchoredLandmarkMode === 'placement' &&
+          map.useLandmark &&
+          mapAnchoredLandmarkDef &&
+          displayLandmark?.clearing === index
+        ) {
+          const placedForCode = placedLandmarks[displayLandmark.code] ?? []
+          const inPieces = clearingPieces.landmarks.some(l => l.code === displayLandmark.code)
+          if (!inPieces && (placedForCode.length === 0 || placedForCode.includes(index))) {
+            quadrantLandmarks.push(mapAnchoredLandmarkDef)
+          }
         }
 
         return (
@@ -360,7 +440,7 @@ const MapChart: React.FC<MapChartProps> = ({
               fill="transparent"
             />
 
-            {isAlreadySelected && (
+            {isAlreadySelected ? (
               <circle
                 cx={x}
                 cy={y}
@@ -369,9 +449,9 @@ const MapChart: React.FC<MapChartProps> = ({
                 stroke="#22c55e"
                 strokeWidth="6"
               />
-            )}
+            ) : null}
 
-            {isTargetValid && !isAlreadySelected && (
+            {isTargetValid && !isAlreadySelected ? (
               <circle
                 cx={x}
                 cy={y}
@@ -381,7 +461,7 @@ const MapChart: React.FC<MapChartProps> = ({
                 strokeWidth="6"
                 strokeDasharray="10 5"
               />
-            )}
+            ) : null}
 
             {ruin ? (
               <image
@@ -450,62 +530,36 @@ const MapChart: React.FC<MapChartProps> = ({
               </image>
             ) : null}
 
-            {map.useLandmark && map.landmark?.clearing === index ? (
+            {overviewLandmark ? (
               <image
-                x={map.landmark.x}
-                y={map.landmark.y}
+                x={overviewLandmark.x}
+                y={overviewLandmark.y}
                 width="100"
                 height="100"
                 transform={
-                  map.landmark.angle != null
-                    ? `rotate(${map.landmark.angle} ${map.landmark.x + 50} ${map.landmark.y + 50})`
+                  overviewLandmark.angle != null
+                    ? `rotate(${overviewLandmark.angle} ${overviewLandmark.x + 50} ${overviewLandmark.y + 50})`
                     : undefined
                 }
-                href={map.landmark.image}
+                href={overviewLandmark.image}
               >
                 <title>
-                  <LocaleText i18nKey={`landmark.${map.landmark.code}.name`} />
+                  <LocaleText i18nKey={`landmark.${overviewLandmark.code}.name`} />
                 </title>
               </image>
             ) : null}
 
-            {/* Placed Landmarks (Bottom-Left Quadrant) */}
-            {clearingPieces.landmarks.map((landmark, i) => {
-              const size = 75
-              return (
-                <image
-                  key={`landmark-${landmark.code}-${i}`}
-                  x={x - size + 5 - i * 12}
-                  y={y + 5 + i * 12}
-                  width={size}
-                  height={size}
-                  href={landmark.image}
-                >
-                  <title>
-                    <LocaleText i18nKey={`landmark.${landmark.code}.name`} />
-                  </title>
-                </image>
-              )
-            })}
+            <LandmarkQuadrantStack
+              clearingX={x}
+              clearingY={y}
+              landmarks={quadrantLandmarks}
+            />
 
-            {/* Placed Hirelings (Bottom-Right Quadrant) */}
-            {clearingPieces.hirelings.map((hireling, i) => {
-              const size = 75
-              return (
-                <image
-                  key={`hireling-${hireling.code}-${i}`}
-                  x={x - 5 + i * 22}
-                  y={y + 5 + i * 22}
-                  width={size}
-                  height={size}
-                  href={hireling.image}
-                >
-                  <title>
-                    <LocaleText i18nKey={`hireling.${hireling.code}.name`} />
-                  </title>
-                </image>
-              )
-            })}
+            <HirelingQuadrantStack
+              clearingX={x}
+              clearingY={y}
+              hirelings={clearingPieces.hirelings}
+            />
 
             {/*
       ============================================================

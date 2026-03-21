@@ -13,8 +13,6 @@ const SetUpBotsStep: SetupStepComponent = ({ flowSlice }) => {
   const ruinPlacer = useAppSelector(state => state.flow.ruinPlacer)
   const ruinFaction = bot?.baseFactionCode === 'warlord' || bot?.baseFactionCode === 'vagabond'
 
-  console.log(bot?.baseFactionCode)
-
   if (!botCode) return null
 
   const ruinTextKey = ruinFaction

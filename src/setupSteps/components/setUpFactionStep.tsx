@@ -27,7 +27,6 @@ const SetUpFactionStep: SetupStepComponent = ({ flowSlice }) => {
   if (vagabondSetUp) {
     textKey.unshift(`${baseTextKey}.vagabondSetUp`)
   }
-
   const ruinTextKey = ruinFaction
     ? ruinPlacer === null || ruinPlacer === key
       ? 'setupStep.setupRuins.title'
@@ -50,8 +49,8 @@ const SetUpFactionStep: SetupStepComponent = ({ flowSlice }) => {
       }}
       components={components}
     >
-      <Section textKey={ruinTextKey} />
-    </Section>
+    <Section textKey={ruinTextKey} />
+  </Section>
   )
 }
 
